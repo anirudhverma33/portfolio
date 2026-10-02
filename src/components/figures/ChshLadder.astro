@@ -1,0 +1,55 @@
+---
+// The CHSH scale: reference bounds (theory) and the one measured value from the PR-box paper.
+// Built from HTML so labels stay legible at phone widths.
+import { getClaim } from '../../lib/claims';
+
+const measured = getClaim('pr.chsh');
+const S = parseFloat(measured.value);
+const pct = (s: number) => `${(s / 4) * 100}%`;
+const refs = [
+  { s: 4, label: 'Algebraic maximum', value: '4', kind: 'algebraic limit', row: 0, right: true },
+  { s: 2 * Math.SQRT2, label: 'Tsirelson bound', value: '2√2 ≈ 2.83', kind: 'theoretical bound', row: 1, right: true },
+  { s: 2, label: 'Local bound', value: '2', kind: 'theoretical bound', row: 2, right: false },
+];
+---
+
+<figure class="ladder">
+  <div class="bench plot">
+    <div class="scale" role="img" aria-label={`CHSH scale from 0 to 4. Local bound 2 and Tsirelson bound 2√2 are theoretical bounds; 4 is the algebraic maximum. Measured value in the PR-box simulation: S = ${measured.value}.`}>
+      {refs.map((r) => (
+        <div class:list={['ref', { right: r.right }]} style={`left:${pct(r.s)}; --row:${r.row}`}>
+          <span class="label">{r.label}, <span class="mtext">{r.value}</span><span class="kind">{r.kind}</span></span>
+        </div>
+      ))}
+      <div class="axis" aria-hidden="true">
+        {[0, 1, 2, 3, 4].map((t) => <span class="tick" style={`left:${pct(t)}`}>{t}</span>)}
+      </div>
+      <div class="pt" style={`left:${pct(S)}`}></div>
+      <p class="pt-label" style={`left:${pct(S)}`}>Measured <span class="mtext">S = {measured.value}</span></p>
+    </div>
+  </div>
+  <figcaption>
+    Dashed lines are reference values from theory. The filled point is the measured CHSH value of the PR-correlation
+    simulation (arXiv:2509.26271, p. 5); its ±0.002 uncertainty is narrower than the marker. The value comes from a
+    circuit acting as a non-signalling oracle. Tsirelson's bound limits parties who share entanglement but cannot
+    communicate.
+  </figcaption>
+</figure>
+
+<style>
+  .ladder { margin: 0 0 32px; }
+  .plot { padding: 16px 20px 12px; }
+  .scale { position: relative; height: 214px; margin: 0 4px; font-family: var(--sans); font-size: var(--s-14); }
+  .ref { position: absolute; top: calc(var(--row) * 34px); bottom: 70px; border-left: 1.5px dashed var(--graphite); }
+  .label { position: absolute; top: -4px; left: 8px; white-space: nowrap; color: var(--ink); background: var(--surface); padding: 0 4px; }
+  .ref.right .label { left: auto; right: 8px; }
+  .label .mtext { font-size: var(--s-16); }
+  .kind { color: var(--graphite); margin-left: 6px; }
+  .axis { position: absolute; left: 0; right: 0; bottom: 70px; border-top: 1.5px solid var(--ink); }
+  .tick { position: absolute; top: 0; transform: translateX(-50%); padding-top: 10px; color: var(--graphite); }
+  .tick::before { content: ''; position: absolute; left: 50%; top: -6px; height: 12px; border-left: 1.5px solid var(--ink); }
+  .pt { position: absolute; bottom: 70px; width: 16px; height: 16px; margin: 0 0 -8px -8px; border-radius: 50%; background: var(--pump); }
+  .pt-label { position: absolute; bottom: 0; transform: translateX(-100%); white-space: nowrap; color: var(--pump); font-weight: 500; margin: 0; }
+  .pt-label .mtext { font-size: var(--s-16); }
+  @media (max-width: 520px) { .kind { display: none; } }
+</style>

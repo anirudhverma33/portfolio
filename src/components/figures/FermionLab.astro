@@ -1,0 +1,165 @@
+---
+// Illustrative monitored free-fermion trajectory, computed live in a Web Worker. Not thesis data.
+const L = 48;
+---
+
+<div class="lab bench" data-lab data-l={L}>
+  <p class="provenance sans">
+    Illustrative simulation running in your browser: one quantum trajectory of a {L}-site chain, half filled, starting
+    from a Néel state. It re-implements the standard method; it is not the thesis code, and its numbers are not thesis results.
+  </p>
+  <div class="bar">
+    <div class="gamma">
+      <label class="sans" for="lab-gamma"><span>Measurement strength <span class="mtext">γ</span></span> <output data-gamma-out>0.30</output></label>
+      <input id="lab-gamma" type="range" min="-1.3" max="0.7" step="0.01" value="-0.52" data-gamma />
+    </div>
+    <div class="buttons">
+      <button class="control" type="button" data-run aria-pressed="false">Run</button>
+      <button class="text-button" type="button" data-reset>Restart</button>
+    </div>
+  </div>
+  <div class="panes">
+    <figure class="pane">
+      <canvas width={L} height="150" data-canvas aria-label="Occupation of each site over time for the current trajectory"></canvas>
+      <figcaption>Site occupation ⟨n<sub>i</sub>⟩ over time, newest at the bottom. Stronger colour means occupied. Sites run left to right.</figcaption>
+    </figure>
+    <figure class="pane">
+      <svg viewBox="0 0 400 260" data-profile role="img" aria-label="Time-averaged entanglement entropy against subsystem size">
+        <g class="axes">
+          <line x1="44" y1="220" x2="390" y2="220" />
+          <line x1="44" y1="12" x2="44" y2="220" />
+          <text x="217" y="252" text-anchor="middle">Subsystem size ℓ (sites)</text>
+          <text x="14" y="116" text-anchor="middle" transform="rotate(-90 14 116)">Entropy S(ℓ)</text>
+        </g>
+        <g data-ticks class="ticks"></g>
+        <path data-now class="now" d="" />
+        <path data-avg class="avg" d="" />
+      </svg>
+      <figcaption>
+        Entanglement entropy of the first ℓ sites: dotted line is the current state, solid line the time average. Weak monitoring lets
+        S(ℓ) keep rising with ℓ; strong monitoring flattens it, the area-law regime.
+      </figcaption>
+    </figure>
+  </div>
+  <p class="status sans" aria-live="polite" data-status>Press Run to start a trajectory.</p>
+</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>('[data-lab]')) {
+    const L = +root.dataset.l!;
+    const canvas = root.querySelector<HTMLCanvasElement>('[data-canvas]')!;
+    const ctx = canvas.getContext('2d')!;
+    const gammaIn = root.querySelector<HTMLInputElement>('[data-gamma]')!;
+    const gammaOut = root.querySelector('[data-gamma-out]')!;
+    const runBtn = root.querySelector<HTMLButtonElement>('[data-run]')!;
+    const status = root.querySelector('[data-status]')!;
+    const nowPath = root.querySelector<SVGPathElement>('[data-now]')!;
+    const avgPath = root.querySelector<SVGPathElement>('[data-avg]')!;
+    const ticks = root.querySelector<SVGGElement>('[data-ticks]')!;
+    const H = canvas.height;
+    const img = ctx.createImageData(L, H);
+    const css = getComputedStyle(root);
+    const hex = (v: string) => {
+      const c = v.trim().replace('#', '');
+      return [0, 2, 4].map((i) => parseInt(c.slice(i, i + 2), 16));
+    };
+    const ink = hex(css.getPropertyValue('--idler') || '#a3342f');
+    const paper = hex(css.getPropertyValue('--surface') || '#fafaf9');
+
+    let worker: Worker | null = null;
+    let running = false;
+    let yMax = 3;
+    const gamma = () => Math.pow(10, +gammaIn.value);
+    const x = (ell: number) => 44 + ((ell - 0) / (L / 2)) * 346;
+    const y = (s: number) => 220 - (s / yMax) * 205;
+    const line = (arr: ArrayLike<number>) =>
+      Array.from(arr, (s, i) => `${i ? 'L' : 'M'}${x(i + 1).toFixed(1)},${y(s).toFixed(1)}`).join('');
+    const drawTicks = () => {
+      let g = '';
+      for (let e = 0; e <= L / 2; e += 6) g += `<text x="${x(e)}" y="238" text-anchor="middle">${e}</text>`;
+      for (let s = 0; s <= yMax; s += yMax > 4 ? 2 : 1) g += `<text x="38" y="${y(s) + 4}" text-anchor="end">${s}</text><line x1="44" x2="390" y1="${y(s)}" y2="${y(s)}" class="grid"/>`;
+      ticks.innerHTML = g;
+    };
+    drawTicks();
+
+    const pushRow = (n: Float64Array) => {
+      img.data.copyWithin(0, L * 4);
+      const base = (H - 1) * L * 4;
+      for (let i = 0; i < L; i++) {
+        const a = Math.min(Math.max(n[i], 0), 1);
+        for (let c = 0; c < 3; c++) img.data[base + i * 4 + c] = Math.round(paper[c] + (ink[c] - paper[c]) * a);
+        img.data[base + i * 4 + 3] = 255;
+      }
+      ctx.putImageData(img, 0, 0);
+    };
+    const clear = () => {
+      for (let p = 0; p < img.data.length; p += 4) {
+        img.data[p] = paper[0]; img.data[p + 1] = paper[1]; img.data[p + 2] = paper[2]; img.data[p + 3] = 255;
+      }
+      ctx.putImageData(img, 0, 0);
+      nowPath.setAttribute('d', '');
+      avgPath.setAttribute('d', '');
+    };
+    clear();
+
+    const ensureWorker = () => {
+      if (worker) return worker;
+      worker = new Worker(new URL('../../lib/fermion-worker.ts', import.meta.url), { type: 'module' });
+      worker.onmessage = (e) => {
+        const m = e.data;
+        if (m.reset) clear();
+        pushRow(m.n);
+        if (m.profile) {
+          const peak = Math.max(...m.profile, ...(m.avg ?? []));
+          if (peak > yMax * 0.95) { yMax = Math.ceil(peak * 1.25); drawTicks(); }
+          nowPath.setAttribute('d', line(m.profile));
+          if (m.avg) avgPath.setAttribute('d', line(m.avg));
+          status.textContent = `t = ${m.t.toFixed(1)}. Half-chain entropy now ${m.half.toFixed(2)}. ${m.avgCount ? `Average over ${m.avgCount} snapshots.` : 'Letting the state settle before averaging.'}`;
+        }
+      };
+      worker.postMessage({ cmd: 'reset', L, gamma: gamma() });
+      return worker;
+    };
+    const setRunning = (on: boolean) => {
+      running = on;
+      runBtn.setAttribute('aria-pressed', String(on));
+      runBtn.textContent = on ? 'Pause' : 'Run';
+      ensureWorker().postMessage({ cmd: on ? 'run' : 'pause', L, gamma: gamma() });
+    };
+    runBtn.addEventListener('click', () => setRunning(!running));
+    root.querySelector('[data-reset]')!.addEventListener('click', () => {
+      yMax = 3; drawTicks();
+      ensureWorker().postMessage({ cmd: 'reset', L, gamma: gamma() });
+    });
+    gammaIn.addEventListener('input', () => {
+      gammaOut.textContent = gamma().toFixed(2);
+      worker?.postMessage({ cmd: 'gamma', gamma: gamma() });
+    });
+    // Pause when scrolled away to save battery.
+    new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting && running) setRunning(false);
+    }).observe(root);
+  }
+</script>
+
+<style>
+  .lab { padding: 20px; }
+  .provenance { font-size: var(--s-14); color: var(--graphite); margin: 0 0 16px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 12px 32px; align-items: end; }
+  .gamma { flex: 1 1 260px; max-width: 420px; }
+  .gamma label { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--s-14); color: var(--graphite); gap: 8px; }
+  output { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .buttons { display: flex; gap: 16px; align-items: center; }
+  .panes { display: grid; gap: 24px; margin-top: 16px; }
+  @media (min-width: 800px) { .panes { grid-template-columns: 1fr 1.3fr; } }
+  .pane { margin: 0; }
+  canvas { width: 100%; height: 260px; image-rendering: pixelated; border: 1px solid var(--hairline); }
+  svg { width: 100%; height: auto; }
+  .axes line { stroke: var(--ink); stroke-width: 1; }
+  .axes text, :global(.lab .ticks text) { font: 400 12px var(--sans); fill: var(--graphite); }
+  :global(.lab .ticks .grid) { stroke: var(--hairline); }
+  .now { fill: none; stroke: var(--idler); stroke-width: 1.5; stroke-dasharray: 2 4; }
+  .avg { fill: none; stroke: var(--idler); stroke-width: 2.5; }
+  figcaption { margin-top: 8px; }
+  .status { font-size: var(--s-14); color: var(--graphite); margin: 12px 0 0; min-height: 2.8em; }
+</style>

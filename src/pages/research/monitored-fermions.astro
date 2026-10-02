@@ -1,0 +1,81 @@
+---
+import CaseStudy from '../../layouts/CaseStudy.astro';
+import Claim from '../../components/Claim.astro';
+import ResultsTable from '../../components/ResultsTable.astro';
+import Fig from '../../components/Fig.astro';
+import Tex from '../../components/Tex.astro';
+import FermionLab from '../../components/figures/FermionLab.astro';
+import entropy from '../../assets/figures/ms-entropy-l800.png';
+import corrMatrix from '../../assets/figures/ms-corr-matrix.png';
+import corrGamma from '../../assets/figures/ms-corr-gamma.png';
+
+const src = 'Verma, MS thesis, IISc (2025).';
+---
+
+<CaseStudy
+  slug="monitored-fermions"
+  setting="Department of Physics, IISc Bengaluru"
+  contribution={[
+    { text: 'I wrote all of the simulation code from scratch and carried out the numerical study in the thesis.', basis: 'Author’s statement, October 2026; thesis declaration, April 2025.' },
+  ]}
+  collaborators={[
+    { text: 'Sumilan Banerjee supervised the thesis.', basis: 'MS thesis, certificate.' },
+    { text: 'Entanglement results were benchmarked against Alberton, Buchhold and Diehl, Phys. Rev. Lett. 126, 170602 (2021). Their figure reproduced in the thesis is not shown here.', basis: 'MS thesis, Sec. 2.2 and Figure 2.3.' },
+  ]}
+>
+  <Fragment slot="problem">
+    <p>
+      When a quantum many-body system is measured repeatedly, entangling unitary dynamics competes with the
+      disentangling effect of the measurements. This can change how entanglement scales with subsystem size, the
+      phenomenon known as a measurement-induced transition.
+    </p>
+    <p>
+      For free fermions whose particle number is monitored, finite but large systems show a crossover from logarithmic
+      to area-law entanglement as the measurement strength grows. This thesis asks how response functions and
+      correlations behave across that crossover.
+    </p>
+  </Fragment>
+
+  <Fragment slot="method">
+    <p>
+      The system is a one-dimensional tight-binding chain whose local occupations are continuously and weakly
+      monitored at rate γ:
+    </p>
+    <Tex block tex={String.raw`H=-J\sum_j\bigl(c_j^\dagger c_{j+1}+c_{j+1}^\dagger c_j\bigr),\qquad \text{monitored observables } n_j=c_j^\dagger c_j`} />
+    <p>
+      The dynamics follow a stochastic Schrödinger equation. Because the evolution keeps states Gaussian, each quantum
+      trajectory can be tracked efficiently through its two-point correlation matrix. The thesis:
+    </p>
+    <ul>
+      <li>benchmarks entanglement entropy against earlier work, for chains up to L = 800,</li>
+      <li>benchmarks local observables and correlations against exact Hermitian evolution at γ = 0,</li>
+      <li>computes connected density–density and current–current correlations and the density–density response function,</li>
+      <li>compares typical and mean averaging over trajectories.</li>
+    </ul>
+  </Fragment>
+
+  <Fragment slot="results">
+    <p>
+      The simulations reproduce the <Claim id="ms.crossover" bare /> reported in earlier work. Weak monitoring keeps
+      coherent oscillations in local observables, while strong monitoring suppresses them through the quantum Zeno
+      effect (<Claim id="ms.oscillations" bare />). Density–density correlations show{' '}
+      <Claim id="ms.diffusive" bare />, current–current correlations <Claim id="ms.current" bare />, and the
+      density–density response function <Claim id="ms.response" bare />.
+    </p>
+    <ResultsTable ids={['ms.crossover', 'ms.oscillations', 'ms.diffusive', 'ms.current', 'ms.response']} />
+  </Fragment>
+
+  <Fragment slot="interactive">
+    <p>
+      Run a trajectory and change the measurement strength. At low γ the occupations keep moving and entanglement grows
+      with subsystem size; at high γ the sites freeze towards full or empty and the entropy curve flattens.
+    </p>
+    <FermionLab />
+  </Fragment>
+
+  <Fragment slot="figures">
+    <Fig src={entropy} alt="Entanglement entropy against log of chord length for many measurement strengths; curves flatten as gamma increases." caption="Figure 2.2. Entanglement entropy for L = 800 and 50 trajectories, for a range of measurement strengths γ." source={src} />
+    <Fig src={corrMatrix} alt="Heat map of the two-time correlation matrix with a bright diagonal and oscillating off-diagonal stripes." caption="Figure 2.14. Correlation matrix for the connected density–density correlation C(t, t′), L = 50, t_f = 50." source={src} />
+    <Fig src={corrGamma} alt="Two curves of averaged correlation against time difference for gamma = 0.2." caption="Figure 2.29. Comparison of correlations for 500 trajectories at γ = 0.2, typical averaging." source={src} />
+  </Fragment>
+</CaseStudy>

@@ -1,0 +1,16 @@
+---
+import Base from '../layouts/Base.astro';
+import { url } from '../lib/site';
+---
+
+<Base title="Page not found" description="This page does not exist.">
+  <div class="wrap nf">
+    <h1>Page not found</h1>
+    <p>The address may have changed when the site moved. Try the <a href={url('/research/')}>research index</a> or the <a href={url('/papers/')}>papers list</a>.</p>
+  </div>
+</Base>
+
+<style>
+  .nf { padding-top: 64px; min-height: 50vh; }
+  .nf p { margin-top: 20px; font-size: var(--s-21); }
+</style>

@@ -1,0 +1,47 @@
+---
+import Base from '../../layouts/Base.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import { projects, otherWork } from '../../lib/projects';
+
+const [lead, ...rest] = projects;
+---
+
+<Base title="Research" description="Case studies in photonic quantum information, quantum foundations, quantum walks and monitored many-body systems.">
+  <div class="wrap">
+    <header class="head">
+      <h1>Research</h1>
+      <p class="lede">
+        Five case studies, each separating the problem, the method, the reported results, my own contribution and that of my collaborators.
+        Glyphs mark the kind of work: <span class="sans">● experimental, ○ theory, ◐ computational.</span>
+      </p>
+    </header>
+    <ProjectCard project={lead} lead />
+    <div class="grid">{rest.map((p) => <ProjectCard project={p} />)}</div>
+
+    <section class="section" aria-labelledby="other-h">
+      <h2 id="other-h">Other work</h2>
+      <ul class="other">
+        {otherWork.map((w) => (
+          <li>
+            <h3>{w.title}</h3>
+            <p>{w.detail}</p>
+            <p class="s sans">{w.setting}, {w.period}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .head { padding: 40px 0 48px; }
+  .lede { font-size: var(--s-21); margin-top: 20px; max-width: 60ch; }
+  .lede .sans { font-size: var(--s-16); color: var(--graphite); }
+  .grid { display: grid; gap: 56px 40px; margin-top: 64px; }
+  @media (min-width: 760px) { .grid { grid-template-columns: 1fr 1fr; } }
+  .other { list-style: none; padding: 0; margin: 0; }
+  .other li { padding: 20px 0; border-top: 1px solid var(--hairline); }
+  .other h3 { font-size: var(--s-21); margin-bottom: 8px; }
+  .other p { margin: 0 0 4px; font-size: var(--s-16); }
+  .other .s { font-size: var(--s-14); color: var(--graphite); }
+</style>

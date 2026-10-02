@@ -1,0 +1,90 @@
+---
+import CaseStudy from '../../layouts/CaseStudy.astro';
+import Claim from '../../components/Claim.astro';
+import ResultsTable from '../../components/ResultsTable.astro';
+import Fig from '../../components/Fig.astro';
+import Tex from '../../components/Tex.astro';
+import ChshLadder from '../../components/figures/ChshLadder.astro';
+import PrBoxSampler from '../../components/figures/PrBoxSampler.astro';
+import cnot from '../../assets/figures/pr-cnot.png';
+import oracle from '../../assets/figures/pr-oracle.png';
+import chsh from '../../assets/figures/pr-chsh.png';
+import setup from '../../assets/figures/pr-setup.png';
+
+const src = 'Shukla et al., arXiv:2509.26271.';
+---
+
+<CaseStudy
+  slug="pr-box-simulation"
+  setting="Quantum Optics & Quantum Information Laboratory, IISc Bengaluru, with S. N. Bose National Centre for Basic Sciences, Kolkata"
+  contribution={[{ text: 'I worked on the initial part of the theory and on the analysis.', basis: 'Author’s statement, October 2026.' }]}
+  collaborators={[
+    {
+      text: 'Kunal Shukla (first author), Kanad Sengupta, Sanchari Chakraborti, Manik Banik and C. M. Chandrashekar. The paper does not state individual roles.',
+      basis: 'Author list of arXiv:2509.26271v1.',
+    },
+  ]}
+>
+  <Fragment slot="problem">
+    <p>
+      Quantum correlations violate Bell inequalities, but only up to a point. For the CHSH expression, parties sharing
+      any entangled state cannot exceed Tsirelson’s bound of 2√2, while the no-signalling principle alone would allow
+      the algebraic maximum of 4. The Popescu–Rohrlich (PR) box reaches that maximum.
+    </p>
+    <p>
+      PR correlations can be simulated if the parties may communicate, which defeats the point. This work asks whether
+      they can be simulated using a resource that is intrinsically non-signalling, and demonstrates this on a photonic
+      circuit.
+    </p>
+  </Fragment>
+
+  <Fragment slot="method">
+    <p>
+      In the circuit picture, an entangling gate can act as a signalling or a non-signalling resource depending on how
+      its inputs are prepared (Fig. 1). The scheme combines Hadamard, CNOT and Toffoli gates into a four-qubit oracle
+      with restricted input access. The gate controls correlations between distinct physical systems, while randomness
+      inside the gate removes any signalling capacity (Fig. 2).
+    </p>
+    <p>
+      The experiment uses a polarization-entangled photon pair from a type-II PPKTP crystal in a Sagnac
+      interferometer, with polarization and path encoding on each photon (Fig. 4). The CHSH value is computed from
+      coincidence counts:
+    </p>
+    <Tex block tex={String.raw`\mathcal{S}=\Bigl|\sum_{x,y\in\{0,1\}}(-1)^{x\cdot y}\,E(a_x,b_y)\Bigr|`} />
+    <p>
+      A numerical simulation repeats the scheme with an unentangled, classically correlated state, and the
+      Supplementary Material of the paper extends it to multipartite correlations.
+    </p>
+  </Fragment>
+
+  <Fragment slot="results">
+    <p>
+      The measured CHSH value is <Claim id="pr.chsh" />, against an ideal of 4. For reference, the local bound is{' '}
+      <Claim id="chsh.local" bare />, the Tsirelson bound <Claim id="chsh.tsirelson" bare /> and the algebraic maximum{' '}
+      <Claim id="chsh.algebraic" bare />. These are values from theory, not measurements.
+    </p>
+    <p>
+      In the computational and circular measurement bases the measured values approach 4, while the diagonal basis gives{' '}
+      <Claim id="pr.diagonal" bare />. The paper also reports that, in simulation, PR correlations are{' '}
+      <Claim id="pr.unentangled" bare /> without entanglement.
+    </p>
+    <ResultsTable ids={['pr.chsh', 'chsh.local', 'chsh.tsirelson', 'chsh.algebraic', 'pr.fidelity', 'pr.visibility', 'pr.diagonal', 'pr.unentangled']} />
+  </Fragment>
+
+  <Fragment slot="interactive">
+    <ChshLadder />
+    <h3>The target correlation</h3>
+    <p>
+      A PR box returns outputs with <Tex tex={String.raw`a \oplus b = x \cdot y`} /> for every pair of inputs, while each output on its own is a fair coin.
+      Draw from an ideal box to see both properties.
+    </p>
+    <PrBoxSampler />
+  </Fragment>
+
+  <Fragment slot="figures">
+    <Fig src={cnot} alt="Two circuit diagrams of a CNOT gate between Alice and Bob, with inputs |c⟩ and |+⟩." caption="Fig. 1. A CNOT gate enables one bit of communication from Alice to Bob when Alice may prepare |c⟩ ∈ {|0⟩, |1⟩}; restricted to |+⟩, it instead prepares the entangled state |Φ⁺⟩." source={src} />
+    <Fig src={oracle} alt="Four-qubit oracle circuit and its classical analogue." caption="Fig. 2. The four-qubit quantum oracle (left) and its classical counterpart (right)." source={src} />
+    <Fig src={chsh} alt="Three panels: CHSH values by measurement basis, CHSH against basis angle with theory curve, and simulated values for an unentangled state." caption="Fig. 3. (a) Measured CHSH values by measurement basis. (b) Measured CHSH values against basis angle θ, with the theoretical curve. (c) Numerical simulation for the unentangled mixed state." source={src} wide />
+    <Fig src={setup} alt="Optical layout with entangled-photon source, the black-box circuit simulating the PR correlation, and measurement units." caption="Fig. 4. Experimental setup: state preparation, the black box simulating the PR correlation, and the measurement units." source={src} wide />
+  </Fragment>
+</CaseStudy>

@@ -1,0 +1,70 @@
+---
+import Base from '../layouts/Base.astro';
+import PubEntry from '../components/PubEntry.astro';
+import { publications, theses, talks } from '../lib/publications';
+import { profiles, url } from '../lib/site';
+
+const years = [...new Set(publications.map((p) => p.year))].sort((a, b) => b - a);
+const scholar = profiles.find((p) => p.label === 'Google Scholar')!;
+const orcid = profiles.find((p) => p.label === 'ORCID')!;
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': publications.map((p) => ({
+    '@type': 'ScholarlyArticle',
+    headline: p.title,
+    author: p.authors.map((name) => ({ '@type': 'Person', name })),
+    datePublished: String(p.year),
+    abstract: p.abstract,
+    ...(p.doi ? { sameAs: `https://doi.org/${p.doi}` } : { url: `https://arxiv.org/abs/${p.arxiv}` }),
+  })),
+};
+---
+
+<Base title="Papers" description="Publications and preprints by Anirudh Verma, with abstracts and BibTeX, plus theses and talks." jsonLd={jsonLd}>
+  <div class="wrap">
+    <header class="head">
+      <h1>Papers</h1>
+      <p class="lede sans">
+        Also on <a href={scholar.href}>Google Scholar</a> and <a href={orcid.href}>ORCID</a>. Status of papers under review is as listed in my CV.
+      </p>
+    </header>
+
+    {years.map((y) => (
+      <section class="year" aria-labelledby={`y-${y}`}>
+        <h2 id={`y-${y}`}>{y}</h2>
+        {publications.filter((p) => p.year === y).map((p) => <PubEntry pub={p} />)}
+      </section>
+    ))}
+
+    <section class="section" aria-labelledby="theses-h">
+      <h2 id="theses-h">Theses and talks</h2>
+      <ul class="list">
+        {theses.map((t) => (
+          <li>
+            <p class="t">{t.title}</p>
+            <p>{t.detail} {t.year}.</p>
+            <p class="sans"><a href={url(`/research/${t.project}/`)}>Case study</a></p>
+          </li>
+        ))}
+        {talks.map((t) => (
+          <li>
+            <p class="t">{t.title}</p>
+            <p>{t.detail}, {t.year}.</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .head { padding: 40px 0 32px; }
+  .lede { margin-top: 16px; color: var(--graphite); font-size: var(--s-16); }
+  .year { padding-top: 32px; }
+  .year h2 { font-size: var(--s-24); margin-bottom: 8px; font-variant-numeric: lining-nums; }
+  .list { list-style: none; padding: 0; margin: 0; }
+  .list li { padding: 20px 0; border-top: 1px solid var(--hairline); }
+  .list p { margin: 0 0 4px; font-size: var(--s-16); }
+  .list .t { font-size: var(--s-21); font-weight: 600; }
+  .list .sans a { display: inline-block; padding: 10px 0; font-size: var(--s-14); }
+</style>

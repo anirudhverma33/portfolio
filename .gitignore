@@ -1,0 +1,13 @@
+# Private source documents (transcripts, certificates, CV with phone number) — never publish
+documents/
+
+node_modules/
+dist/
+.astro/
+.env
+.DS_Store
+
+# Local tooling, kept out of the repository
+.claude/
+.agents/
+skills-lock.json

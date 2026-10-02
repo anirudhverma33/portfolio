@@ -1,0 +1,90 @@
+---
+import CaseStudy from '../../layouts/CaseStudy.astro';
+import Claim from '../../components/Claim.astro';
+import ResultsTable from '../../components/ResultsTable.astro';
+import Fig from '../../components/Fig.astro';
+import Tex from '../../components/Tex.astro';
+import FringeHero from '../../components/figures/FringeHero.astro';
+import BellTable from '../../components/figures/BellTable.astro';
+import DensityMatrix from '../../components/figures/DensityMatrix.astro';
+import { url } from '../../lib/site';
+import setup from '../../assets/figures/bs-setup.png';
+import cones from '../../assets/figures/bs-cones.png';
+import depol from '../../assets/figures/bs-depolarisation.png';
+
+const src = 'Verma, BS thesis, IISc (2024).';
+---
+
+<CaseStudy
+  slug="entangled-photon-source"
+  setting="Quantum Optics & Quantum Information Lab, Department of Instrumentation and Applied Physics, IISc Bengaluru"
+  contribution={[
+    {
+      text: 'This thesis gave me a working understanding of the entangled-photon source and hands-on experience with it and its measurements. Building the source was not my work alone.',
+      basis: 'Author’s statement, October 2026.',
+    },
+    { text: 'I wrote and submitted the thesis.', basis: 'Thesis declaration, April 2024.' },
+  ]}
+  collaborators={[
+    {
+      text: 'C. M. Chandrashekar supervised the thesis. Members of the Quantum Optics and Quantum Information lab are thanked in the acknowledgements; their individual roles are not stated.',
+      basis: 'BS thesis, certificate and acknowledgements.',
+    },
+  ]}
+>
+  <Fragment slot="problem">
+    <p>
+      A random number generator is only as trustworthy as the evidence that its output comes from a quantum process.
+      This thesis asks how the quality of random bits drawn from entangled photons relates to the quality of the
+      entanglement, and how a Bell violation can certify that the data are quantum.
+    </p>
+  </Fragment>
+
+  <Fragment slot="method">
+    <p>
+      Photon pairs come from spontaneous parametric down-conversion in a 10 mm type-II PPKTP crystal with quasi-phase
+      matching. The down-converted light cones were imaged with an EMCCD camera. Entanglement was checked three ways:
+    </p>
+    <ul>
+      <li>a Bell–CHSH test from coincidence counts at four pairs of polarizer settings,</li>
+      <li>polarization-correlation visibility curves with the first polarizer at H, D, V and A,</li>
+      <li>quantum state tomography, giving Stokes parameters, the density matrix and the state fidelity.</li>
+    </ul>
+    <p>The CHSH value combines four correlations, each computed from four coincidence counts:</p>
+    <Tex block tex={String.raw`E(a,b)=\frac{N_{ab}+N_{a_\perp b_\perp}-N_{a b_\perp}-N_{a_\perp b}}{N_{ab}+N_{a_\perp b_\perp}+N_{a b_\perp}+N_{a_\perp b}},\qquad S=\bigl|E(a,b)-E(a,b')+E(a',b)+E(a',b')\bigr|`} />
+    <p>
+      Random bits come from measuring the polarization of one photon. The thesis tests them with the NIST suite, splits
+      them into odd and even bits, applies Toeplitz and XOR extractors, and studies how depolarization with a half-wave
+      plate lowers both S and the randomness.
+    </p>
+  </Fragment>
+
+  <Fragment slot="results">
+    <p>
+      The thesis reports <Claim id="bs.chsh" /> from the Table 5.1 counts, above the local bound of 2, a state fidelity
+      of <Claim id="bs.fidelity" /> from tomography, and a bit rate of <Claim id="bs.rate" /> at 6 mW pump power, with
+      the bits passing <Claim id="bs.nist" bare /> NIST tests without post-processing.
+    </p>
+    <p>
+      The four-qubit QRNG paper reports its own characterisation of the source it used. Those numbers are on{' '}
+      <a href={url('/research/four-qubit-qrng/')}>that case study</a> and are not combined with the thesis values here.
+    </p>
+    <ResultsTable ids={['bs.chsh', 'bs.fidelity', 'bs.rate', 'bs.nist']} />
+  </Fragment>
+
+  <Fragment slot="interactive">
+    <h3>Visibility curves</h3>
+    <FringeHero />
+    <h3>The Bell test, from the raw counts</h3>
+    <p>Pick one of the four correlation terms to see which counts it uses.</p>
+    <BellTable />
+    <h3>Reconstructed state</h3>
+    <DensityMatrix />
+  </Fragment>
+
+  <Fragment slot="figures">
+    <Fig src={setup} alt="Schematic of the polarization-entangled photon setup with pump, crystal and two detection arms." caption="Figure 5.1. Experimental setup." source={src} />
+    <Fig src={cones} alt="EMCCD images of SPDC light cones for horizontal, vertical and both polarizations." caption="Figure 5.2. SPDC light cones imaged on an EMCCD camera at the degenerate temperature with an 810 nm bandpass filter." source={src} />
+    <Fig src={depol} alt="Line plot of S value falling from about 2.7 towards zero as the half-wave-plate angle increases to about 24 degrees." caption="Figure 5.6. Effect of depolarization on the S value as a function of half-wave-plate angle." source={src} />
+  </Fragment>
+</CaseStudy>

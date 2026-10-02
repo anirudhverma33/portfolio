@@ -1,0 +1,22 @@
+{
+  "name": "research-portfolio",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fontsource/instrument-sans": "^5.3.0",
+    "@fontsource/stix-two-math": "^5.3.0",
+    "@fontsource/stix-two-text": "^5.3.0",
+    "astro": "^7.3.5",
+    "temml": "^0.13.5"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.3"
+  }
+}

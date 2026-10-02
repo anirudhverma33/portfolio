@@ -1,0 +1,73 @@
+---
+// Reconstructed density matrix, BS thesis Table 5.5. Toggle real/imaginary with CSS only.
+import data from '../../data/bs-thesis-table-5-5.json';
+
+const basis = data.basis.map((b) => `|${b}⟩`);
+const parts = [
+  { key: 're', label: 'Real part', idx: 0 },
+  { key: 'im', label: 'Imaginary part', idx: 1 },
+];
+const vmax = 0.55;
+---
+
+<div class="dm bench">
+  <fieldset>
+    <legend class="sans">Show</legend>
+    {parts.map((p, k) => (
+      <label class="pick">
+        <input type="radio" name="dm-part" value={p.key} checked={k === 0} />
+        <span>{p.label}</span>
+      </label>
+    ))}
+  </fieldset>
+  <div class="grids">
+    {parts.map((p) => (
+      <table class={`grid grid-${p.key}`}>
+        <caption class="visually-hidden">{p.label} of the reconstructed density matrix</caption>
+        <thead>
+          <tr><td></td>{basis.map((b) => <th scope="col">{b}</th>)}</tr>
+        </thead>
+        <tbody>
+          {data.rho.map((row, i) => (
+            <tr>
+              <th scope="row">{basis[i]}</th>
+              {row.map((cell) => {
+                const v = cell[p.idx];
+                const a = Math.min(Math.abs(v) / vmax, 1);
+                return (
+                  <td style={`--a:${(a * 55).toFixed(1)}%`} class={v < 0 ? 'neg' : ''}>
+                    {(v === 0 ? 0 : v).toFixed(2).replace('-', '−')}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ))}
+  </div>
+  <p class="caption">
+    Two-photon polarization state reconstructed by tomography (thesis Table 5.5), shown to two decimals. Shade tracks magnitude; hatched cells are negative.
+    The large |HV⟩ and |VH⟩ populations, and the coherence of 0.45 between them, stand out. Fidelity reported in the thesis: 93.9%.
+  </p>
+</div>
+
+<style>
+  .dm { padding: 20px; }
+  fieldset { border: 0; padding: 0; margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+  legend { font-size: var(--s-14); color: var(--graphite); margin-bottom: 8px; padding: 0; }
+  .pick { position: relative; }
+  .pick input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+  .pick span { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--hairline); border-radius: 2px; background: var(--plate); font: 500 var(--s-14) var(--sans); }
+  .pick input:checked + span { border-color: var(--pump); color: var(--pump); }
+  .pick input:focus-visible + span { outline: 2px solid var(--pump); outline-offset: 2px; }
+  .grid { display: none; margin: 4px 0 12px; }
+  .dm:has(input[value='re']:checked) .grid-re, .dm:has(input[value='im']:checked) .grid-im { display: table; }
+  th { font-family: var(--math); font-weight: 400; padding: 8px 10px; color: var(--graphite); }
+  td {
+    width: 4.2rem; height: 3.4rem; text-align: center; font-size: var(--s-16); border: 1px solid var(--plate);
+    background: color-mix(in srgb, var(--pump) var(--a), var(--surface));
+  }
+  td.neg { background-image: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--plate) 55%, transparent) 4px 7px); }
+  @media (max-width: 420px) { td { width: 3.4rem; height: 3rem; font-size: var(--s-14); } }
+</style>

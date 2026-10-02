@@ -1,0 +1,29 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  caption: string;
+  source: string;
+  wide?: boolean;
+}
+const { src, alt, caption, source, wide = false } = Astro.props;
+---
+
+<figure class:list={['fig', { wide }]}>
+  <div class="frame">
+    <Image src={src} alt={alt} widths={[480, 800, 1200, Math.min(src.width, 1600)]} sizes="(min-width: 1200px) 1100px, 100vw" format="webp" />
+  </div>
+  <figcaption>{caption} <span class="src">{source}</span></figcaption>
+</figure>
+
+<style>
+  .fig { margin: 32px 0; max-width: 820px; }
+  .fig.wide { max-width: none; }
+  .frame { border: 1px solid var(--hairline); border-radius: 2px; background: #fff; padding: 12px; }
+  .frame :global(img) { width: 100%; }
+  figcaption { margin-top: 10px; max-width: 72ch; }
+  .src { display: block; margin-top: 2px; }
+</style>

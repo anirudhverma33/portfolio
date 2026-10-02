@@ -1,0 +1,51 @@
+---
+import { Image } from 'astro:assets';
+import type { Project } from '../lib/projects';
+import { methodGlyph, methodLabel } from '../lib/projects';
+import { getPublication, statusText } from '../lib/publications';
+import { url } from '../lib/site';
+
+interface Props {
+  project: Project;
+  lead?: boolean;
+}
+const { project: p, lead = false } = Astro.props;
+const pub = p.publication ? getPublication(p.publication) : undefined;
+const status = pub ? statusText(pub) : p.thesis === 'bs-thesis' ? 'BS thesis, 2024' : 'MS thesis, 2025';
+const first = pub && pub.authors[0] === 'Anirudh Verma';
+---
+
+<article class:list={['card', { lead }]}>
+  <div class="figure">
+    <div class="frame">
+      <Image src={p.image} alt={p.imageAlt} widths={[400, 700, 1000]} sizes={lead ? '(min-width: 960px) 640px, 100vw' : '(min-width: 960px) 540px, 100vw'} format="webp" loading="lazy" />
+    </div>
+    <p class="caption">{p.caption}</p>
+  </div>
+  <div class="text">
+    <p class="meta"><span aria-hidden="true">{methodGlyph[p.method]}</span> {methodLabel[p.method]}, {p.field.charAt(0).toLowerCase() + p.field.slice(1)}</p>
+    <h3><a href={url(`/research/${p.slug}/`)}>{p.title}</a></h3>
+    <p class="summary">{p.summary}</p>
+    <p class="status">{first ? 'First author. ' : ''}{status}</p>
+  </div>
+</article>
+
+<style>
+  .card { position: relative; display: grid; gap: 16px; align-content: start; }
+  .frame { border: 1px solid var(--hairline); border-radius: 2px; background: #fff; aspect-ratio: 4 / 3; display: grid; place-items: center; padding: 12px; overflow: hidden; }
+  .frame :global(img) { width: 100%; height: 100%; object-fit: contain; }
+  .caption { margin: 8px 0 0; }
+  .meta { font-family: var(--sans); font-size: var(--s-14); color: var(--graphite); margin: 0 0 6px; }
+  h3 a { color: var(--ink); text-decoration: none; }
+  h3 a::after { content: ''; position: absolute; inset: 0; }
+  h3 a:hover, .card:hover h3 a { text-decoration: underline; text-decoration-color: var(--pump); text-decoration-thickness: 2px; text-underline-offset: 0.18em; }
+  .card:has(a:focus-visible) { outline: 2px solid var(--pump); outline-offset: 8px; }
+  h3 a:focus-visible { outline: none; }
+  .summary { margin: 10px 0 8px; }
+  .status { font-family: var(--sans); font-size: var(--s-14); color: var(--graphite); margin: 0; }
+  @media (min-width: 960px) {
+    .lead { grid-template-columns: 7fr 5fr; gap: 40px; align-items: center; }
+    .lead .frame { aspect-ratio: 16 / 9; }
+    .lead h3 { font-size: var(--s-36); }
+  }
+</style>

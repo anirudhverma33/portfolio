@@ -1,0 +1,65 @@
+---
+import { getClaim, kindLabel } from '../lib/claims';
+
+interface Props {
+  ids: string[];
+  caption?: string;
+}
+const { ids, caption = 'Reported results. Each value is quoted from the source listed.' } = Astro.props;
+const rows = ids.map(getClaim);
+---
+
+<div class="scroll" role="region" aria-label="Reported results" tabindex="0">
+  <table>
+    <caption>{caption}</caption>
+    <thead>
+      <tr><th scope="col">Quantity</th><th scope="col">Value</th><th scope="col">Kind</th><th scope="col">Source</th></tr>
+    </thead>
+    <tbody>
+      {
+        rows.map((c) => (
+          <tr id={`claim-${c.id}`}>
+            <th scope="row">
+              {c.quantity}
+              {c.context && <span class="ctx">{c.context}</span>}
+            </th>
+            <td class="val">{c.value}</td>
+            <td><span class={`kind kind-${c.kind}`}>{kindLabel[c.kind]}</span></td>
+            <td class="src">
+              {c.source}
+              <details>
+                <summary>Quote</summary>
+                <blockquote>{c.quote}</blockquote>
+              </details>
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .scroll { overflow-x: auto; margin: 24px 0 32px; }
+  table { width: 100%; min-width: 640px; font-size: var(--s-16); }
+  caption {
+    text-align: left;
+    font-family: var(--sans);
+    font-size: var(--s-14);
+    color: var(--graphite);
+    padding-bottom: 12px;
+  }
+  th, td { text-align: left; vertical-align: top; padding: 12px 16px 12px 0; border-top: 1px solid var(--hairline); }
+  thead th { font-family: var(--sans); font-size: var(--s-14); font-weight: 500; color: var(--graphite); border-top: 0; }
+  tbody th { font-weight: 400; max-width: 30ch; }
+  .ctx { display: block; font-family: var(--sans); font-size: var(--s-14); color: var(--graphite); margin-top: 4px; }
+  .val { font-weight: 600; white-space: nowrap; }
+  .kind { font-family: var(--sans); font-size: var(--s-14); white-space: nowrap; }
+  .kind-measured { color: var(--pump); }
+  .kind-simulated { color: var(--idler); }
+  .src { font-family: var(--sans); font-size: var(--s-14); color: var(--graphite); max-width: 28ch; }
+  details { margin-top: 4px; }
+  summary { cursor: pointer; color: var(--pump); padding: 6px 0; }
+  blockquote { margin: 6px 0 0; font-family: var(--serif); font-size: var(--s-16); color: var(--ink); }
+  tr:target th, tr:target td { background: color-mix(in srgb, var(--pump) 8%, transparent); }
+</style>

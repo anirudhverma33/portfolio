@@ -1,0 +1,148 @@
+---
+// Permutation trees for n = 4, 5, 6 gluons (arXiv:2607.02456, Fig. 1, Fig. 9, Table VI), laid out at build time.
+// Structure only: the walk amplitudes depend on the kinematics and are shown in the paper's Figs. 3–4.
+import { buildTree, layoutRadial, parkeTaylorDenominator, terminalCount } from '../../lib/perm-tree';
+
+const R = 200;
+const trees = [4, 5, 6].map((n) => {
+  const nodes = layoutRadial(buildTree(n), R);
+  return { n, nodes, g: nodes.length, D: (n - 1) * nodes.length, leaves: terminalCount(n) };
+});
+const fmt = (v: number) => v.toFixed(1);
+const seqLabel = (s: number[]) => `(${s.join(', ')})`;
+---
+
+<div class="ptree bench" data-ptree>
+  <p class="provenance sans">Tree structure as constructed in the paper. Counts match its Table VI. Amplitudes are not shown here because they depend on the chosen momenta.</p>
+  <div class="bar">
+    <fieldset>
+      <legend class="sans">Gluons</legend>
+      {trees.map((t, k) => (
+        <button class="control" type="button" data-n={t.n} aria-pressed={String(k === 0)}>n = {t.n}</button>
+      ))}
+    </fieldset>
+    <div class="step">
+      <label class="sans" for="ptree-step">Walk step <output data-step-out>3</output></label>
+      <input id="ptree-step" type="range" min="0" max="3" value="3" data-step />
+    </div>
+  </div>
+
+  <div class="stage">
+    {trees.map((t, k) => (
+      <svg viewBox={`${-R - 70} ${-R - 30} ${2 * R + 140} ${2 * R + 60}`} data-tree={t.n} hidden={k !== 0} role="group" aria-label={`Permutation tree for ${t.n} gluons: ${t.g} nodes, ${t.leaves} color orderings`}>
+        {t.nodes.filter((d) => d.parent !== null).map((d) => {
+          const p = t.nodes[d.parent!];
+          return <line x1={fmt(p.x)} y1={fmt(p.y)} x2={fmt(d.x)} y2={fmt(d.y)} data-depth={d.depth} data-id={d.id} class="edge" />;
+        })}
+        {t.nodes.map((d) =>
+          d.children.length === 0 ? (
+            <circle cx={fmt(d.x)} cy={fmt(d.y)} r={t.n === 6 ? 3.2 : 5} data-depth={d.depth} data-id={d.id} data-seq={d.seq.join(',')} class="node leaf" tabindex="0" role="button" aria-label={`Ordering ${seqLabel(d.seq)}`} />
+          ) : (
+            <circle cx={fmt(d.x)} cy={fmt(d.y)} r={d.depth === 0 ? 7 : t.n === 6 ? 2.6 : 4} data-depth={d.depth} data-id={d.id} class="node" />
+          ),
+        )}
+        {t.n === 4 && t.nodes.filter((d) => d.children.length === 0).map((d) => {
+          const a = Math.atan2(d.y, d.x);
+          return <text x={fmt(d.x + 14 * Math.cos(a))} y={fmt(d.y + 14 * Math.sin(a) + 5)} text-anchor={Math.cos(a) > 0.2 ? 'start' : Math.cos(a) < -0.2 ? 'end' : 'middle'} class="lbl">{seqLabel(d.seq)}</text>;
+        })}
+        <text x="-12" y="-12" text-anchor="end" class="lbl root">(1)</text>
+      </svg>
+    ))}
+  </div>
+
+  <dl class="facts sans">
+    {trees.map((t, k) => (
+      <div class="row" data-facts={t.n} hidden={k !== 0}>
+        <div><dt>Nodes g(n)</dt><dd>{t.g}</dd></div>
+        <div><dt>Color orderings (n − 1)!</dt><dd>{t.leaves}</dd></div>
+        <div><dt>Walk dimension D(n)</dt><dd>{t.D}</dd></div>
+      </div>
+    ))}
+  </dl>
+  <p class="picked" aria-live="polite" data-picked>Select a leaf to see its color ordering and the Parke–Taylor denominator that the walk accumulates along that path.</p>
+  <script type="application/json" data-pt set:html={JSON.stringify(Object.fromEntries(trees.map((t) => [t.n, t.nodes.map((d) => [d.parent, d.seq])])))} />
+  <script type="application/json" data-den set:html={JSON.stringify(Object.fromEntries(trees.map((t) => [t.n, Object.fromEntries(t.nodes.filter((d) => !d.children.length).map((d) => [d.id, parkeTaylorDenominator(d.seq)]))])))} />
+</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>('[data-ptree]')) {
+    const parents: Record<string, [number | null, number[]][]> = JSON.parse(root.querySelector('[data-pt]')!.textContent!);
+    const dens: Record<string, Record<string, string>> = JSON.parse(root.querySelector('[data-den]')!.textContent!);
+    const step = root.querySelector<HTMLInputElement>('[data-step]')!;
+    const stepOut = root.querySelector('[data-step-out]')!;
+    const picked = root.querySelector('[data-picked]')!;
+    let n = 4;
+    const svg = () => root.querySelector<SVGSVGElement>(`[data-tree="${n}"]`)!;
+
+    const applyStep = () => {
+      const t = +step.value;
+      stepOut.textContent = String(t);
+      svg().querySelectorAll<SVGElement>('[data-depth]').forEach((el) => {
+        const d = +el.dataset.depth!;
+        el.classList.toggle('future', d > t);
+        el.classList.toggle('front', d === t && el.tagName === 'circle');
+      });
+    };
+    const select = (leaf: SVGCircleElement) => {
+      const s = svg();
+      s.querySelectorAll('.on').forEach((e) => e.classList.remove('on'));
+      let id: number | null = +leaf.dataset.id!;
+      while (id !== null) {
+        s.querySelectorAll(`[data-id="${id}"]`).forEach((e) => e.classList.add('on'));
+        id = parents[n][id][0];
+      }
+      const seq = leaf.dataset.seq!.split(',').join(', ');
+      picked.innerHTML = `Ordering <span class="mtext">(${seq})</span>. Parke–Taylor denominator <span class="mtext">${dens[n][leaf.dataset.id!]}</span>.`;
+    };
+    root.querySelectorAll<HTMLButtonElement>('[data-n]').forEach((b) =>
+      b.addEventListener('click', () => {
+        n = +b.dataset.n!;
+        root.querySelectorAll<HTMLButtonElement>('[data-n]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        root.querySelectorAll<SVGSVGElement>('[data-tree]').forEach((s) => s.toggleAttribute('hidden', s.dataset.tree !== String(n)));
+        root.querySelectorAll<HTMLElement>('[data-facts]').forEach((f) => (f.hidden = f.dataset.facts !== String(n)));
+        step.max = String(n - 1);
+        step.value = String(n - 1);
+        applyStep();
+      }),
+    );
+    step.addEventListener('input', applyStep);
+    root.querySelectorAll<SVGCircleElement>('.leaf').forEach((leaf) => {
+      leaf.addEventListener('click', () => select(leaf));
+      leaf.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(leaf); }
+      });
+    });
+    applyStep();
+  }
+</script>
+
+<style>
+  .ptree { padding: 20px; }
+  .provenance { font-size: var(--s-14); color: var(--graphite); margin: 0 0 16px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 16px 40px; align-items: end; }
+  fieldset { border: 0; margin: 0; padding: 0; display: flex; gap: 8px; }
+  legend { font-size: var(--s-14); color: var(--graphite); padding: 0; margin-bottom: 8px; }
+  .step { flex: 1 1 220px; max-width: 360px; }
+  .step label { display: flex; justify-content: space-between; font-size: var(--s-14); color: var(--graphite); }
+  output { color: var(--ink); }
+  .stage { max-width: 640px; margin: 8px auto 0; }
+  svg { width: 100%; height: auto; overflow: visible; }
+  svg[hidden] { display: none; }
+  .edge { stroke: var(--pump); stroke-width: 1.4; transition: opacity 0.2s; }
+  .node { fill: var(--surface); stroke: var(--pump); stroke-width: 1.6; transition: opacity 0.2s; }
+  .leaf { cursor: pointer; }
+  .leaf:focus-visible { outline: none; stroke: var(--ink); stroke-width: 3; }
+  .future { opacity: 0.16; }
+  .front { fill: var(--pump); }
+  .on { stroke: var(--ink); stroke-width: 2.6; }
+  circle.on { fill: var(--ink); }
+  .lbl { font: 400 13px var(--math); fill: var(--ink); }
+  .root { fill: var(--graphite); }
+  .facts { margin: 12px 0 0; }
+  .facts .row { display: flex; flex-wrap: wrap; gap: 8px 32px; }
+  .facts .row[hidden] { display: none; }
+  .facts dt { font-size: var(--s-14); color: var(--graphite); }
+  .facts dd { margin: 0; font-size: var(--s-21); font-variant-numeric: tabular-nums; }
+  .picked { font-size: var(--s-16); margin: 16px 0 0; min-height: 3em; }
+  @media (prefers-reduced-motion: reduce) { .edge, .node { transition: none; } }
+</style>

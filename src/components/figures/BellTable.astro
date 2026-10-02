@@ -1,0 +1,118 @@
+---
+// CHSH from the raw coincidence counts of BS thesis Table 5.1. Pure HTML/CSS: radio buttons select a setting.
+import { chsh, correlation, rows, settings } from '../../lib/bell';
+
+const alice = [
+  { hwp: 157.5, pol: '−45°' },
+  { hwp: 0, pol: '0°' },
+  { hwp: 22.5, pol: '45°' },
+  { hwp: 45, pol: '90°' },
+];
+const bob = [
+  { hwp: 168.75, pol: '−22.5°' },
+  { hwp: 11.25, pol: '22.5°' },
+  { hwp: 33.75, pol: '67.5°' },
+  { hwp: 56.25, pol: '112.5°' },
+];
+const fmt = (n: number) => n.toLocaleString('en-US');
+const S = chsh();
+const E = settings.map(correlation);
+const num = (v: number) => v.toFixed(4).replace('-', '−');
+---
+
+<div class="bell bench">
+  <fieldset>
+    <legend class="sans">Choose a correlation term</legend>
+    {settings.map((s, k) => (
+      <label class="pick">
+        <input type="radio" name="bell-setting" value={k} checked={k === 0} />
+        <span>{s.label}</span>
+      </label>
+    ))}
+  </fieldset>
+
+  <div class="scroll" tabindex="0" role="region" aria-label="Coincidence counts by polarizer setting">
+    <table class="counts">
+      <caption class="caption">Coincidence counts from Table 5.1. Rows: first polarizer (HWP 1 angle). Columns: second polarizer (HWP 2 angle).</caption>
+      <thead>
+        <tr>
+          <td></td>
+          {bob.map((b) => <th scope="col">{b.pol}<span>HWP {b.hwp}°</span></th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {alice.map((a, r) => (
+          <tr>
+            <th scope="row">{a.pol}<span>HWP {a.hwp}°</span></th>
+            {bob.map((_, c) => {
+              const i = r * 4 + c;
+              const cls = settings.flatMap((s, k) => [
+                s.plus.includes(i) ? `p${k}` : '',
+                s.minus.includes(i) ? `m${k}` : '',
+              ]).filter(Boolean);
+              return <td class={cls.join(' ')}>{fmt(rows[i].counts)}</td>;
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  {settings.map((s, k) => {
+    const n = (i: number) => fmt(rows[i].counts);
+    return (
+      <p class={`eq eq${k}`}>
+        <span class="mtext">{s.label}</span> = ({n(s.plus[0])} + {n(s.plus[1])} − {n(s.minus[0])} − {n(s.minus[1])}) / (sum of all four) ={' '}
+        <strong>{num(E[k])}</strong>
+        <span class="key sans"><span class="sw plus"></span>counted positively <span class="sw minus"></span>counted negatively</span>
+      </p>
+    );
+  })}
+
+  <p class="total">
+    S = |E₁ − E₂ + E₃ + E₄| = |{E.map((e, k) => (k === 0 ? num(e) : `${settings[k].sign < 0 ? '−' : '+'} (${num(e)})`)).join(' ')}| = <strong>{S.toFixed(3)}</strong>
+  </p>
+  <p class="caption">
+    Computed from the thesis counts when this page was built; it reproduces the thesis value S = 2.729 (Table 5.1). The local bound is 2 and the Tsirelson bound is 2√2 ≈ 2.83.
+  </p>
+</div>
+
+<style>
+  .bell { padding: 20px; }
+  fieldset { border: 0; padding: 0; margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+  legend { font-size: var(--s-14); color: var(--graphite); margin-bottom: 8px; padding: 0; }
+  .pick { position: relative; }
+  .pick input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+  .pick span {
+    display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px;
+    border: 1px solid var(--hairline); border-radius: 2px; background: var(--plate);
+    font-family: var(--math); font-size: var(--s-16);
+  }
+  .pick input:checked + span { border-color: var(--pump); color: var(--pump); }
+  .pick input:focus-visible + span { outline: 2px solid var(--pump); outline-offset: 2px; }
+  .scroll { overflow-x: auto; }
+  .counts { margin: 8px 0 16px; font-size: var(--s-16); }
+  .counts caption { text-align: left; padding-bottom: 8px; }
+  .counts th, .counts td { padding: 10px 14px; text-align: right; border: 1px solid var(--hairline); }
+  .counts th { font-family: var(--math); font-weight: 400; background: var(--plate); }
+  .counts th span { display: block; font-family: var(--sans); font-size: 12px; color: var(--graphite); }
+  .counts td { background: var(--plate); transition: background-color 0.15s; }
+  .eq, .key { display: none; }
+  .eq { font-size: var(--s-16); }
+  .key { margin-top: 6px; font-size: var(--s-14); color: var(--graphite); }
+  .sw { display: inline-block; width: 12px; height: 12px; margin: 0 6px -1px 0; border-radius: 1px; }
+  .sw.minus { margin-left: 12px; }
+  .plus, .bell:has(input[value='0']:checked) .p0, .bell:has(input[value='1']:checked) .p1,
+  .bell:has(input[value='2']:checked) .p2, .bell:has(input[value='3']:checked) .p3 {
+    background: color-mix(in srgb, var(--pump) 26%, var(--plate));
+  }
+  .minus, .bell:has(input[value='0']:checked) .m0, .bell:has(input[value='1']:checked) .m1,
+  .bell:has(input[value='2']:checked) .m2, .bell:has(input[value='3']:checked) .m3 {
+    background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--graphite) 30%, var(--plate)) 0 3px, var(--plate) 3px 7px);
+  }
+  .bell:has(input[value='0']:checked) .eq0, .bell:has(input[value='1']:checked) .eq1,
+  .bell:has(input[value='2']:checked) .eq2, .bell:has(input[value='3']:checked) .eq3 { display: block; }
+  .bell:has(input:checked) .eq .key { display: block; }
+  .total { font-size: var(--s-16); margin-top: 16px; }
+  .total strong, .eq strong { font-weight: 600; }
+</style>

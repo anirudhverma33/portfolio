@@ -1,0 +1,87 @@
+---
+// Computational-basis outcomes of the ideal four-qubit state, Eq. (2) of Phys. Rev. A 110, 032615:
+// an equal superposition of the eight even-parity strings. Sampled with browser randomness.
+const strings = ['0000', '0101', '0110', '0011', '1100', '1001', '1010', '1111'];
+---
+
+<div class="qrng bench" data-qrng data-strings={strings.join(',')}>
+  <p class="provenance sans">
+    Simulated draws from the ideal state, Eq. (2), using your browser's random numbers. This shows how the protocol splits the four bit
+    strings; it is not experimental output.
+  </p>
+  <div class="go">
+    <button class="control" type="button" data-draw="1">Measure once</button>
+    <button class="control" type="button" data-draw="64">Measure 64 times</button>
+    <button class="text-button" type="button" data-reveal aria-pressed="false">Reveal secret strings</button>
+    <button class="text-button" type="button" data-reset>Reset</button>
+  </div>
+  <div class="streams" data-streams>
+    <div class="stream" data-q="0"><p class="name sans"><span class="mtext">X<sub>A</sub></span> published for randomness testing</p><p class="bits public" data-bits></p></div>
+    <div class="stream" data-q="1"><p class="name sans"><span class="mtext">X<sub>B</sub></span> kept secret</p><p class="bits secret" data-bits></p></div>
+    <div class="stream" data-q="2"><p class="name sans"><span class="mtext">X<sub>C</sub></span> kept secret</p><p class="bits secret" data-bits></p></div>
+    <div class="stream" data-q="3"><p class="name sans"><span class="mtext">X<sub>D</sub></span> discarded</p><p class="bits discarded" data-bits></p></div>
+  </div>
+  <p class="summary sans" aria-live="polite" data-summary>No measurements yet.</p>
+</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>('[data-qrng]')) {
+    const strings = root.dataset.strings!.split(',');
+    const MAX = 96;
+    let draws: string[] = [];
+    let total = 0, parityOk = 0;
+    const rows = [...root.querySelectorAll<HTMLElement>('[data-bits]')];
+    const reveal = root.querySelector<HTMLButtonElement>('[data-reveal]')!;
+    const render = () => {
+      const shown = draws.slice(-MAX);
+      rows.forEach((el, q) => {
+        el.textContent = shown.map((s) => s[q]).join('');
+      });
+      root.querySelector('[data-summary]')!.textContent = total
+        ? `${total} measurements: ${total} public bits verify ${2 * total} secret bits. Parity xA ⊕ xB ⊕ xC ⊕ xD = 0 held in ${parityOk} of ${total} draws (always, for the ideal state).`
+        : 'No measurements yet.';
+    };
+    root.querySelectorAll<HTMLButtonElement>('[data-draw]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const buf = new Uint8Array(+btn.dataset.draw!);
+        crypto.getRandomValues(buf);
+        for (const r of buf) {
+          const s = strings[r & 7];
+          draws.push(s);
+          total++;
+          parityOk += +([...s].reduce((p, c) => p ^ +c, 0) === 0);
+        }
+        draws = draws.slice(-MAX);
+        render();
+      }),
+    );
+    reveal.addEventListener('click', () => {
+      const on = reveal.getAttribute('aria-pressed') !== 'true';
+      reveal.setAttribute('aria-pressed', String(on));
+      reveal.textContent = on ? 'Hide secret strings' : 'Reveal secret strings';
+      root.classList.toggle('revealed', on);
+    });
+    root.querySelector('[data-reset]')!.addEventListener('click', () => {
+      draws = []; total = 0; parityOk = 0; render();
+    });
+  }
+</script>
+
+<style>
+  .qrng { padding: 20px; }
+  .provenance { font-size: var(--s-14); color: var(--graphite); margin: 0 0 16px; }
+  .go { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  .streams { margin: 16px 0 8px; display: grid; gap: 12px; }
+  .name { font-size: var(--s-14); color: var(--graphite); margin: 0 0 2px; }
+  .name .mtext { color: var(--ink); font-size: var(--s-16); margin-right: 6px; }
+  .bits {
+    margin: 0; min-height: 1.6em; font-family: var(--math); font-size: var(--s-16);
+    letter-spacing: 0.12em; word-break: break-all; max-width: none; font-variant-numeric: tabular-nums;
+  }
+  .public { color: var(--pump); }
+  .secret { color: transparent; text-shadow: 0 0 7px color-mix(in srgb, var(--ink) 60%, transparent); }
+  .revealed .secret { color: var(--ink); text-shadow: none; }
+  .discarded { color: var(--graphite); text-decoration: line-through; opacity: 0.6; }
+  .summary { font-size: var(--s-14); color: var(--graphite); margin: 8px 0 0; }
+  @media (prefers-reduced-motion: no-preference) { .secret { transition: color 0.2s, text-shadow 0.2s; } }
+</style>

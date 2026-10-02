@@ -1,0 +1,89 @@
+---
+import CaseStudy from '../../layouts/CaseStudy.astro';
+import Claim from '../../components/Claim.astro';
+import ResultsTable from '../../components/ResultsTable.astro';
+import Fig from '../../components/Fig.astro';
+import Tex from '../../components/Tex.astro';
+import QrngSampler from '../../components/figures/QrngSampler.astro';
+import setup from '../../assets/figures/fq-setup.png';
+import nist from '../../assets/figures/fq-nist.png';
+import encrypt from '../../assets/figures/fq-encrypt.png';
+import bitrate from '../../assets/figures/fq-bitrate.png';
+
+const src = 'Kolangatt et al., Phys. Rev. A 110, 032615 (2024). © 2024 American Physical Society.';
+---
+
+<CaseStudy
+  slug="four-qubit-qrng"
+  setting="Quantum Optics & Quantum Information, Department of Instrumentation and Applied Physics, IISc Bengaluru"
+  contribution={[{ text: 'I worked on the theory, data collection, noise modelling and testing.', basis: 'Author’s statement, October 2026.' }]}
+  collaborators={[
+    {
+      text: 'Mayalakshmi Kolangatt (first author), Sujai Matta, Kanad Sengupta and C. M. Chandrashekar. The paper does not state individual author roles.',
+      basis: 'Author list, Phys. Rev. A 110, 032615.',
+    },
+    {
+      text: 'The paper thanks K. Muhammed Shafi for input on the design of the experimental setup, and M. Joshi for contributing to building the entangled photon source.',
+      basis: 'Acknowledgments, Phys. Rev. A 110, 032615.',
+    },
+  ]}
+>
+  <Fragment slot="problem">
+    <p>
+      Most random numbers in practice come from algorithms, which are predictable to anyone who knows the algorithm
+      and its seed. Quantum measurements give genuine randomness, but statistical tests alone cannot show where a
+      sequence came from, and testing a sequence normally means revealing it.
+    </p>
+    <p>
+      This work asks how to let an outside party verify the randomness of a quantum device in real time while the bits
+      actually used stay secret, and how to generate public and private keys from the same system.
+    </p>
+  </Fragment>
+
+  <Fragment slot="method">
+    <p>The protocol uses a four-qubit state that is an equal superposition of all even-parity strings, Eq. (2) of the paper:</p>
+    <Tex block tex={String.raw`|\psi\rangle_{ABCD}=\tfrac{1}{2\sqrt{2}}\bigl(|0000\rangle+|0101\rangle+|0110\rangle-|0011\rangle+|1100\rangle-|1001\rangle-|1010\rangle-|1111\rangle\bigr)`} />
+    <p>Measuring each qubit gives four bit strings that are pairwise independent but tied by a parity rule, Eq. (5):</p>
+    <Tex block tex={String.raw`x_A \oplus x_B \oplus x_C \oplus x_D = 0`} />
+    <p>
+      Discarding one string breaks that link, leaving three independent strings. Publishing one for randomness testing
+      then certifies the other two without revealing them, so n published bits verify 2n secret bits.
+    </p>
+    <p>
+      In the experiment, polarization-entangled photon pairs come from a type-II PPKTP crystal pumped at 405 nm. Beam
+      splitters add a path qubit to each photon, giving a four-qubit polarization–path state read out by eight
+      single-photon detectors and a time tagger. The same outputs give Alice and Bob simultaneous public and private
+      keys, demonstrated by encrypting and decrypting images. A noise model, applied to the two-photon input state,
+      describes how entanglement variation and depolarizing noise change the bit rate.
+    </p>
+  </Fragment>
+
+  <Fragment slot="results">
+    <p>
+      The system produced publicly verified and secured random bits at <Claim id="fq.verified-rate" />, from a
+      collective rate of <Claim id="fq.collective-rate" bare /> at 6 mW pump power. Of the sampled bits,{' '}
+      <Claim id="fq.verification" /> passed entanglement verification, and all strings passed{' '}
+      <Claim id="fq.nist" bare /> NIST tests without post-processing.
+    </p>
+    <ResultsTable ids={['fq.verified-rate', 'fq.collective-rate', 'fq.verification', 'fq.nist', 'fq.source-fidelity', 'fq.visibility', 'fq.chsh', 'fq.noise-model']} />
+  </Fragment>
+
+  <Fragment slot="interactive">
+    <p>
+      The sampler draws outcomes from the ideal state above and splits them as the protocol does: one string published,
+      two kept secret, one discarded.
+    </p>
+    <QrngSampler />
+    <p class="caption">
+      For the ideal state the parity rule always holds. In the experiment, <Claim id="fq.verification" bare /> of the
+      sampled bits satisfied it.
+    </p>
+  </Fragment>
+
+  <Fragment slot="figures">
+    <Fig src={setup} alt="Optical layout: 405 nm laser, PPKTP crystal, source characterisation insets, and Alice's and Bob's measurement units." caption="Fig. 3. Experimental setup, with the reconstructed density matrix and visibility curves of the source as insets." source={src} wide />
+    <Fig src={nist} alt="Bar chart of p-values for 15 NIST tests for strings XA, XB and XC, all above the 0.01 threshold." caption="Fig. 4. NIST randomness test results for the strings XA, XB and XC." source={src} />
+    <Fig src={encrypt} alt="Two images shown original, encrypted by Alice as noise, and decrypted by Bob." caption="Fig. 5. Encryption and decryption of images using the generated private and public keys." source={src} />
+    <Fig src={bitrate} alt="Two plots of CHSH value and bit rate against visibility and against half-wave-plate angle, experiment and theory." caption="Fig. 7. Measured bit rate and CHSH value for different entanglement visibilities, with the theoretical expectation." source={src} />
+  </Fragment>
+</CaseStudy>

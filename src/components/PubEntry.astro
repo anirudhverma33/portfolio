@@ -1,0 +1,94 @@
+---
+import type { Publication } from '../lib/publications';
+import { ME } from '../lib/publications';
+import { methodGlyph, methodLabel } from '../lib/projects';
+import { url } from '../lib/site';
+
+interface Props {
+  pub: Publication;
+  compact?: boolean;
+}
+const { pub, compact = false } = Astro.props;
+const arxivUrl = pub.arxiv ? `https://arxiv.org/abs/${pub.arxiv}` : undefined;
+const pdfUrl = pub.arxiv ? `https://arxiv.org/pdf/${pub.arxiv}` : undefined;
+const doiUrl = pub.doi ? `https://doi.org/${pub.doi}` : undefined;
+---
+
+<article class="pub" data-pub={pub.id}>
+  <p class="glyph" title={methodLabel[pub.method]}><span aria-hidden="true">{methodGlyph[pub.method]}</span><span class="visually-hidden">{methodLabel[pub.method]}</span></p>
+  <div>
+    <h3>{pub.title}</h3>
+    <p class="authors">
+      {pub.authors.map((a, i) => (
+        <>{a === ME ? <strong>{a}</strong> : a}{i < pub.authors.length - 1 ? ', ' : ''}</>
+      ))}
+    </p>
+    <p class="venue">
+      {pub.status === 'published' ? (
+        <><em>{pub.venue}</em> ({pub.year})</>
+      ) : (
+        <span class="review">Under review, <em>{pub.venue}</em> (as of {pub.statusAsOf.replace(' (CV)', '')})</span>
+      )}
+      {pub.arxiv && <> <span class="id">arXiv:{pub.arxiv}</span></>}
+      {pub.doi && <> <span class="id">doi:{pub.doi}</span></>}
+    </p>
+    <div class="actions">
+      {!compact && (
+        <button class="text-button" type="button" aria-expanded="false" aria-controls={`abs-${pub.id}`} data-toggle>
+          Abstract
+        </button>
+      )}
+      {pdfUrl && <a href={pdfUrl}>PDF</a>}
+      {arxivUrl && <a href={arxivUrl}>arXiv</a>}
+      {doiUrl && <a href={doiUrl}>Journal</a>}
+      {!compact && (
+        <button class="text-button" type="button" data-copy={pub.bibtex}>
+          Copy BibTeX
+        </button>
+      )}
+      {pub.project && <a href={url(`/research/${pub.project}/`)}>Case study</a>}
+    </div>
+    {!compact && (
+      <div class="abstract" id={`abs-${pub.id}`} hidden>
+        <p>{pub.abstract}</p>
+      </div>
+    )}
+  </div>
+</article>
+
+<script>
+  for (const btn of document.querySelectorAll<HTMLButtonElement>('.pub [data-toggle]')) {
+    btn.addEventListener('click', () => {
+      const panel = document.getElementById(btn.getAttribute('aria-controls')!)!;
+      const open = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!open));
+      panel.hidden = open;
+    });
+  }
+  for (const btn of document.querySelectorAll<HTMLButtonElement>('.pub [data-copy]')) {
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy!);
+        btn.textContent = 'Copied';
+      } catch {
+        btn.textContent = 'Copy unavailable in this browser';
+      }
+      setTimeout(() => (btn.textContent = 'Copy BibTeX'), 2000);
+    });
+  }
+</script>
+
+<style>
+  .pub { display: grid; grid-template-columns: 24px 1fr; gap: 0 12px; padding: 24px 0; border-top: 1px solid var(--hairline); }
+  .glyph { margin: 2px 0 0; color: var(--graphite); font-family: var(--sans); }
+  h3 { font-size: var(--s-21); line-height: 1.3; max-width: 46rem; }
+  .authors { margin: 8px 0 2px; font-size: var(--s-16); }
+  .authors strong { font-weight: 600; }
+  .venue { margin: 0; font-size: var(--s-16); }
+  .review { color: var(--graphite); }
+  .id { font-family: var(--sans); font-size: var(--s-14); color: var(--graphite); margin-left: 8px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 0 20px; align-items: center; font-family: var(--sans); font-size: var(--s-14); }
+  .actions a { display: inline-block; padding: 12px 0; }
+  .abstract { padding: 4px 0 8px; }
+  .abstract p { font-size: var(--s-16); }
+</style>

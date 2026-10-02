@@ -1,0 +1,27 @@
+---
+// Inline result: value, its kind, and a link to the row in the page's results table.
+import { getClaim, kindLabel } from '../lib/claims';
+
+interface Props {
+  id: string;
+  /** Hide the kind label when the surrounding sentence already states it. */
+  bare?: boolean;
+}
+const { id, bare = false } = Astro.props;
+const c = getClaim(id);
+---
+
+<a class:list={['claim', { short: c.value.length < 18 }]} href={`#claim-${c.id}`}><span class="v">{c.value}</span>{!bare && <span class="k">{kindLabel[c.kind]}</span>}</a>
+
+<style>
+  .claim { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--graphite); }
+  .short { white-space: nowrap; }
+  .claim:hover { border-bottom-color: var(--pump); }
+  .k {
+    font-family: var(--sans);
+    font-size: 0.72em;
+    color: var(--graphite);
+    margin-left: 0.35em;
+    vertical-align: 0.1em;
+  }
+</style>

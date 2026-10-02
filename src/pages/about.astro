@@ -1,0 +1,83 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import portrait from '../assets/portrait.jpg';
+import { person, profiles } from '../lib/site';
+import { education, experience, recognition, service, skills } from '../lib/cv';
+---
+
+<Base title="About" description="Education, research experience, skills, recognition and service of Anirudh Verma.">
+  <div class="wrap">
+    <header class="head">
+      <div>
+        <h1>About</h1>
+        <p class="lede">
+          I studied physics at the Indian Institute of Science, Bengaluru, and now work as a Project Assistant in the
+          Quantum Optics & Quantum Information Lab at IISc. My work spans photonic experiments, quantum foundations,
+          quantum walks and open quantum systems.
+        </p>
+        <p class="sans contact">
+          <a href={`mailto:${person.email}`}>{person.email}</a>
+          {profiles.map((p) => <a href={p.href}>{p.label}</a>)}
+        </p>
+      </div>
+      <Image src={portrait} alt="Anirudh Verma on a bridge above a forested river valley." widths={[360, 640]} sizes="(min-width: 900px) 360px, 100vw" format="webp" />
+    </header>
+
+    <section class="block" aria-labelledby="edu-h">
+      <h2 id="edu-h">Education</h2>
+      <ul class="rows">
+        {education.map((e) => (
+          <li><p class="when sans">{e.period}</p><div><p class="t">{e.title}</p><p>{e.place}. {e.detail}</p></div></li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="block" aria-labelledby="exp-h">
+      <h2 id="exp-h">Research experience</h2>
+      <ul class="rows">
+        {experience.map((e) => (
+          <li><p class="when sans">{e.period}</p><div><p class="t">{e.role}, {e.place}</p><p>{e.detail} With {e.with}.</p></div></li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="block" aria-labelledby="skills-h">
+      <h2 id="skills-h">Skills</h2>
+      <dl class="rows">
+        {skills.map((s) => (
+          <div class="li"><dt class="when sans">{s.group}</dt><dd>{s.items}</dd></div>
+        ))}
+      </dl>
+    </section>
+
+    <section class="block" aria-labelledby="rec-h">
+      <h2 id="rec-h">Recognition</h2>
+      <ul class="plain">{recognition.map((r) => <li>{r}</li>)}</ul>
+    </section>
+
+    <section class="block" aria-labelledby="svc-h">
+      <h2 id="svc-h">Talks, conferences and service</h2>
+      <ul class="plain">{service.map((s) => <li>{s.text}</li>)}</ul>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .head { display: grid; gap: 32px 56px; padding: 40px 0 16px; align-items: start; }
+  @media (min-width: 900px) { .head { grid-template-columns: 1fr 360px; } }
+  .head :global(img) { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; object-position: 50% 40%; border-radius: 2px; }
+  .lede { font-size: var(--s-21); margin-top: 20px; }
+  .contact { display: flex; flex-wrap: wrap; gap: 0 24px; font-size: var(--s-16); }
+  .contact a { display: inline-block; padding: 10px 0; }
+  .block { padding-top: 64px; }
+  .block h2 { font-size: var(--s-24); margin-bottom: 12px; }
+  .rows { list-style: none; padding: 0; margin: 0; }
+  .rows li, .rows .li { display: grid; gap: 4px 32px; padding: 16px 0; border-top: 1px solid var(--hairline); }
+  @media (min-width: 760px) { .rows li, .rows .li { grid-template-columns: 12rem 1fr; } }
+  .rows p, .rows dd { margin: 0; font-size: var(--s-16); }
+  .rows .t { font-weight: 600; font-size: var(--s-18); }
+  .when { font-size: var(--s-14); color: var(--graphite); padding-top: 3px; }
+  .plain { padding-left: 1.1em; margin: 0; }
+  .plain li { padding: 6px 0; font-size: var(--s-16); max-width: 70ch; }
+</style>

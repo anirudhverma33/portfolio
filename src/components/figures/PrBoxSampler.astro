@@ -1,0 +1,99 @@
+---
+// The ideal PR box (theory): a ⊕ b = x · y with uniformly random a. Sampled with browser randomness.
+---
+
+<div class="prbox bench" data-prbox>
+  <p class="provenance sans">Illustration of the ideal PR box, the target correlation. Sampled with your browser's random numbers; not experimental data.</p>
+  <div class="inputs">
+    <fieldset>
+      <legend class="sans">Alice's input x</legend>
+      <button class="control" type="button" data-x="0" aria-pressed="true">x = 0</button>
+      <button class="control" type="button" data-x="1" aria-pressed="false">x = 1</button>
+    </fieldset>
+    <fieldset>
+      <legend class="sans">Bob's input y</legend>
+      <button class="control" type="button" data-y="0" aria-pressed="true">y = 0</button>
+      <button class="control" type="button" data-y="1" aria-pressed="false">y = 1</button>
+    </fieldset>
+    <div class="go">
+      <button class="control" type="button" data-draw="1">Draw once</button>
+      <button class="control" type="button" data-draw="500">Draw 500</button>
+      <button class="text-button" type="button" data-reset>Reset</button>
+    </div>
+  </div>
+  <p class="last" aria-live="polite" data-last>Choose inputs and draw. Each draw gives Alice a random bit a, and Bob b = a ⊕ (x · y).</p>
+  <div class="scroll" tabindex="0" role="region" aria-label="Tally of PR-box draws">
+    <table>
+      <caption class="caption">Tally by input pair. Bob's fraction of b = 1 stays near one half whatever Alice chooses, so nothing can be signalled.</caption>
+      <thead><tr><th scope="col">x, y</th><th scope="col">Draws</th><th scope="col">a ⊕ b = x · y</th><th scope="col">Bob's b = 1</th></tr></thead>
+      <tbody>
+        {[[0, 0], [0, 1], [1, 0], [1, 1]].map(([x, y]) => (
+          <tr data-row={`${x}${y}`}><th scope="row">{x}, {y}</th><td data-n>0</td><td data-win>–</td><td data-b>–</td></tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p class="caption">With every round won, the CHSH combination of correlators reaches its algebraic maximum of 4.</p>
+</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>('[data-prbox]')) {
+    let x = 0, y = 0;
+    const tally: Record<string, { n: number; win: number; b1: number }> = {};
+    const reset = () => {
+      for (const k of ['00', '01', '10', '11']) tally[k] = { n: 0, win: 0, b1: 0 };
+    };
+    reset();
+    const press = (attr: 'x' | 'y', v: number) => {
+      root.querySelectorAll<HTMLButtonElement>(`[data-${attr}]`).forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset[attr]! === v)));
+    };
+    root.querySelectorAll<HTMLButtonElement>('[data-x]').forEach((b) => b.addEventListener('click', () => { x = +b.dataset.x!; press('x', x); }));
+    root.querySelectorAll<HTMLButtonElement>('[data-y]').forEach((b) => b.addEventListener('click', () => { y = +b.dataset.y!; press('y', y); }));
+    const render = (a?: number, b?: number) => {
+      for (const [k, t] of Object.entries(tally)) {
+        const row = root.querySelector(`[data-row="${k}"]`)!;
+        row.querySelector('[data-n]')!.textContent = String(t.n);
+        row.querySelector('[data-win]')!.textContent = t.n ? `${((100 * t.win) / t.n).toFixed(0)}%` : '–';
+        row.querySelector('[data-b]')!.textContent = t.n ? `${((100 * t.b1) / t.n).toFixed(1)}%` : '–';
+      }
+      if (a !== undefined) {
+        root.querySelector('[data-last]')!.textContent = `Last draw: x = ${x}, y = ${y} gave a = ${a}, b = ${b}. a ⊕ b = ${a ^ b!}, x · y = ${x & y}.`;
+      }
+    };
+    root.querySelectorAll<HTMLButtonElement>('[data-draw]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        let a = 0, b = 0;
+        const buf = new Uint8Array(+btn.dataset.draw!);
+        crypto.getRandomValues(buf);
+        for (const r of buf) {
+          a = r & 1;
+          b = a ^ (x & y);
+          const t = tally[`${x}${y}`];
+          t.n++;
+          t.win += +((a ^ b) === (x & y));
+          t.b1 += b;
+        }
+        render(a, b);
+      }),
+    );
+    root.querySelector('[data-reset]')!.addEventListener('click', () => { reset(); render(); });
+  }
+</script>
+
+<style>
+  .prbox { padding: 20px; }
+  .provenance { font-size: var(--s-14); color: var(--graphite); margin: 0 0 16px; }
+  .inputs { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: end; }
+  fieldset { border: 0; padding: 0; margin: 0; display: flex; gap: 8px; flex-wrap: wrap; }
+  legend { font-size: var(--s-14); color: var(--graphite); padding: 0; margin-bottom: 8px; }
+  .control { font-family: var(--math); font-size: var(--s-16); }
+  .go { display: flex; gap: 8px 16px; flex-wrap: wrap; align-items: center; }
+  .go .control { font-family: var(--sans); font-size: var(--s-14); }
+  .last { font-size: var(--s-16); margin: 16px 0; min-height: 3em; }
+  .scroll { overflow-x: auto; }
+  table { font-size: var(--s-16); }
+  caption { text-align: left; padding-bottom: 8px; }
+  th, td { text-align: left; padding: 8px 20px 8px 0; border-top: 1px solid var(--hairline); }
+  thead th { font: 500 var(--s-14) var(--sans); color: var(--graphite); border-top: 0; }
+  tbody th { font-family: var(--math); font-weight: 400; }
+</style>

@@ -1,0 +1,13 @@
+---
+// LaTeX → MathML Core at build time. No math runtime ships to the browser.
+import temml from 'temml';
+
+interface Props {
+  tex: string;
+  block?: boolean;
+}
+const { tex, block = false } = Astro.props;
+const html = temml.renderToString(tex, { displayMode: block, throwOnError: true });
+---
+
+<Fragment set:html={html} />

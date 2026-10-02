@@ -1,0 +1,80 @@
+---
+import CaseStudy from '../../layouts/CaseStudy.astro';
+import Claim from '../../components/Claim.astro';
+import ResultsTable from '../../components/ResultsTable.astro';
+import Fig from '../../components/Fig.astro';
+import Tex from '../../components/Tex.astro';
+import PermutationTree from '../../components/figures/PermutationTree.astro';
+import walk from '../../assets/figures/mhv-walk.png';
+import terminal from '../../assets/figures/mhv-terminal.png';
+import five from '../../assets/figures/mhv-five.png';
+
+const src = 'Verma & Chandrashekar, arXiv:2607.02456.';
+---
+
+<CaseStudy
+  slug="mhv-quantum-walks"
+  setting="Quantum Optics & Quantum Information Laboratory, Department of Electronic Systems Engineering, IISc Bengaluru"
+  contribution={[{ text: 'The research in this paper is my own work.', basis: 'Author’s statement, October 2026.' }]}
+  collaborators={[
+    {
+      text: 'C. M. Chandrashekar is the second author and supervised the project.',
+      basis: 'Author list of arXiv:2607.02456; supervisor of my Project Assistant position (CV).',
+    },
+  ]}
+>
+  <Fragment slot="problem">
+    <p>
+      In perturbative quantum chromodynamics, an amplitude with many external gluons splits into color factors and
+      color-ordered partial amplitudes, one for each ordering of the gluons. The number of orderings grows factorially
+      with the number of gluons, even though, for maximally helicity violating (MHV) configurations, each partial
+      amplitude has the compact Parke–Taylor form.
+    </p>
+    <p>
+      The question here is whether that combinatorial structure can be given a dynamical representation, with the
+      orderings explored by a quantum walk, as a step towards quantum algorithms that simulate scattering processes.
+    </p>
+  </Fragment>
+
+  <Fragment slot="method">
+    <p>The full amplitude is a sum over color orderings σ, and for MHV gluons each ordered amplitude is a ratio of spinor products:</p>
+    <Tex block tex={String.raw`\mathcal{M}_n=\sum_{\sigma} C(\sigma)\,A(\sigma),\qquad A(1^-,2^+,\dots,k^-,\dots,n^+)=\frac{\langle 1k\rangle^4}{\langle 12\rangle\langle 23\rangle\cdots\langle n1\rangle}`} />
+    <p>The construction has four parts:</p>
+    <ol>
+      <li>
+        A directed permutation tree. Each node is a partial ordering <Tex tex={String.raw`(1,a_2,\dots,a_m)`} />, each edge appends one
+        remaining gluon, and every root-to-terminal path is one complete color ordering.
+      </li>
+      <li>
+        A coined quantum walk with evolution <Tex tex="U = SC" /> on that tree. Local coin operators assign transition amplitudes from the
+        spinor-product structure, so the amplitude accumulated along a path carries that ordering’s Parke–Taylor denominator.
+      </li>
+      <li>
+        A quantum channel built from Kraus operators that extracts sector-resolved quantities proportional to{' '}
+        <Tex tex={String.raw`|A|^2`} />, and a weighted collection operator that coherently maps all terminal sectors to one reference node.
+      </li>
+      <li>A quantum Fourier transform on the coin space that combines the encoded contributions into the color-decomposed amplitude.</li>
+    </ol>
+    <p>The paper then checks the construction numerically for low-point gluon amplitudes against analytical results.</p>
+  </Fragment>
+
+  <Fragment slot="results">
+    <p>
+      The paper reports that the walk reproduces the Parke–Taylor structure and that the reconstructed low-point
+      amplitudes are <Claim id="mhv.numerics" />, with the comparison given in its Table II. The tree has{' '}
+      <Claim id="mhv.sectors" /> terminal sectors, and its size and the walk’s Hilbert-space dimension grow as listed in Table VI.
+    </p>
+    <ResultsTable ids={['mhv.numerics', 'mhv.sectors', 'mhv.growth']} />
+  </Fragment>
+
+  <Fragment slot="interactive">
+    <p>Switch between four, five and six gluons, move the walk step, and select a leaf to trace its color ordering.</p>
+    <PermutationTree />
+  </Fragment>
+
+  <Fragment slot="figures">
+    <Fig src={walk} alt="Four bar charts of walker probability over tree nodes at steps t = 0 to 3." caption="Fig. 3. Probability distribution of the quantum walker after successive applications of the evolution operator U = SC. The final step corresponds to the terminal permutation sectors." source={src} />
+    <Fig src={terminal} alt="Bar chart of occupation probabilities across the six terminal permutation sectors." caption="Fig. 4. Occupation probabilities of the terminal permutation sectors after completion of the quantum walk." source={src} />
+    <Fig src={five} alt="Radial permutation graph for five gluons with 24 labelled terminal orderings." caption="Fig. 9. Permutation graph for the five-gluon scattering process." source={src} />
+  </Fragment>
+</CaseStudy>
