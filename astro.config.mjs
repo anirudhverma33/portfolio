@@ -1,4 +1,5 @@
 import { defineConfig } from 'astro/config';
+import react from '@astrojs/react';
 
 // SITE_URL and BASE_PATH are set by the GitHub Pages workflow from the repository name,
 // so renaming the repository (or adding a custom domain) needs no code change.
@@ -8,4 +9,5 @@ export default defineConfig({
   trailingSlash: 'always',
   build: { inlineStylesheets: 'auto' },
   devToolbar: { enabled: false },
+  integrations: [react()],
 });

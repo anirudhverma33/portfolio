@@ -1,16 +1,67 @@
 ---
-import { Image } from 'astro:assets';
+import { getImage } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
 import Base from '../layouts/Base.astro';
-import FringeHero from '../components/figures/FringeHero.astro';
-import ProjectCard from '../components/ProjectCard.astro';
-import PubEntry from '../components/PubEntry.astro';
+import HeroSection from '../components/home/HeroSection';
+import MarqueeSection from '../components/home/MarqueeSection';
+import AboutSection from '../components/home/AboutSection';
+import ExperienceSection from '../components/home/ExperienceSection';
+import ProjectsSection from '../components/home/ProjectsSection';
+import type { Img, ProjectData } from '../components/home/types';
 import portrait from '../assets/portrait.jpg';
 import { person, profiles, url } from '../lib/site';
-import { projects, otherWork } from '../lib/projects';
-import { publications } from '../lib/publications';
+import { projects, methodLabel } from '../lib/projects';
+import { publications, statusText } from '../lib/publications';
 import { experience } from '../lib/cv';
+import { figuresByProject } from '../lib/gallery';
 
-const [lead, ...rest] = projects;
+async function img(src: ImageMetadata, alt: string, widths: number[]): Promise<Img> {
+  const w = widths.filter((x) => x <= src.width);
+  const out = await getImage({ src, widths: w.length ? w : [src.width], format: 'webp' });
+  return { src: out.src, srcSet: out.srcSet.attribute, width: src.width, height: src.height, alt };
+}
+
+const portraitCrop = await getImage({ src: portrait, width: 800, height: 1000, fit: 'cover', format: 'webp' });
+const portraitImg: Img = {
+  src: portraitCrop.src,
+  srcSet: (await getImage({ src: portrait, widths: [440, 800], height: 1000, width: 800, fit: 'cover', format: 'webp' })).srcSet.attribute,
+  width: 800,
+  height: 1000,
+  alt: 'Anirudh Verma on a bridge above a forested river valley.',
+};
+
+const marquee = (
+  await Promise.all(
+    projects.flatMap((p) =>
+      figuresByProject[p.slug].map(async (f) => ({ ...(await img(f.src, f.alt, [420, 840])), href: url(`/research/${p.slug}/`) })),
+    ),
+  )
+);
+// Interleave projects so neighbouring tiles come from different work.
+const order = marquee.map((_, i) => i).sort((a, b) => (a % 4) - (b % 4) || a - b);
+const marqueeImages = order.map((i) => marquee[i]);
+
+const projectData: ProjectData[] = await Promise.all(
+  projects.map(async (p) => {
+    const pub = p.publication ? publications.find((x) => x.id === p.publication) : undefined;
+    const status = pub ? statusText(pub) : p.period;
+    return {
+      slug: p.slug,
+      href: url(`/research/${p.slug}/`),
+      category: `${methodLabel[p.method]} · ${status}`,
+      title: p.title,
+      summary: p.summary,
+      status,
+      images: await Promise.all(figuresByProject[p.slug].slice(0, 3).map((f) => img(f.src, f.alt, [480, 800, 1200]))),
+    };
+  }),
+);
+
+const contact = `mailto:${person.email}`;
+const links = { about: '#about', research: '#research', papers: url('/papers/'), contact };
+const aboutText =
+  'I am a physicist working on quantum information with photons. My experimental work uses entangled photon pairs and a four-qubit photonic platform to generate publicly verifiable random numbers and to simulate Popescu–Rohrlich correlations. My theoretical work develops quantum-walk descriptions of scattering amplitudes, and my MS thesis studied free fermions under continuous measurement.';
+
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Person',
@@ -23,126 +74,56 @@ const jsonLd = {
 ---
 
 <Base
+  home
   description="Anirudh Verma: photonic quantum information, quantum foundations, quantum walks and open quantum many-body systems. Research, papers and contact."
   jsonLd={jsonLd}
 >
-  <section class="wrap intro">
-    <h1>{person.name}</h1>
-    <p class="areas">{person.areas.map((a, i) => (i ? a.charAt(0).toLowerCase() + a.slice(1) : a)).join(', ')}</p>
-    <p class="about">
-      I am a physicist working on quantum information with photons. My experimental work uses entangled photon pairs
-      and a four-qubit photonic platform to generate publicly verifiable random numbers and to simulate
-      Popescu–Rohrlich correlations. My theoretical work develops quantum-walk descriptions of scattering amplitudes,
-      and my MS thesis studied free fermions under continuous measurement.
-    </p>
-    <p class="role sans">{person.role}</p>
-    <ul class="links sans">
-      <li><a href={`mailto:${person.email}`}>Email</a></li>
-      {profiles.map((p) => <li><a href={p.href}>{p.label}</a></li>)}
-    </ul>
-  </section>
+  <HeroSection
+    client:load
+    firstName="Anirudh"
+    tagline="a physicist working on quantum information with photons"
+    portrait={portraitImg}
+    links={links}
+  />
+  <MarqueeSection client:visible images={marqueeImages} />
+  <AboutSection client:visible text={aboutText} role={person.role} contact={contact} profiles={profiles} />
+  <ExperienceSection client:visible items={experience} />
+  <ProjectsSection client:visible projects={projectData} />
 
-  <section class="wrap hero-figure" aria-label="Featured measurement">
-    <FringeHero />
-  </section>
-
-  <section class="wrap section" id="research" aria-labelledby="research-h">
-    <h2 id="research-h">Selected research</h2>
-    <ProjectCard project={lead} lead />
-    <div class="grid">
-      {rest.map((p) => <ProjectCard project={p} />)}
-    </div>
-
-    <h3 class="other-h">Other work</h3>
-    <ul class="other">
-      {otherWork.map((w) => (
-        <li>
-          <p class="t">{w.title}</p>
-          <p class="d">{w.detail}</p>
-          <p class="s sans">{w.setting}, {w.period}</p>
-        </li>
-      ))}
-    </ul>
-  </section>
-
-  <section class="wrap section" aria-labelledby="papers-h">
-    <h2 id="papers-h">Papers</h2>
-    <div class="pubs">
-      {publications.map((p) => <PubEntry pub={p} compact />)}
-    </div>
-    <p class="more sans"><a href={url('/papers/')}>All papers, theses and talks, with abstracts and BibTeX</a></p>
-  </section>
-
-  <section class="wrap section" aria-labelledby="exp-h">
-    <h2 id="exp-h">Experience</h2>
-    <ol class="timeline">
-      {experience.map((e) => (
-        <li>
-          <p class="when sans">{e.period}</p>
-          <div>
-            <p class="what">{e.role}, {e.place}</p>
-            <p class="detail">{e.detail} With {e.with}.</p>
-          </div>
-        </li>
-      ))}
+  <section aria-labelledby="papers-h" class="bg-[#0C0C0C] px-5 pb-10 pt-10 sm:px-8 md:px-10">
+    <h2
+      id="papers-h"
+      class="hero-heading mb-12 text-center font-black uppercase leading-none tracking-tight sm:mb-16"
+      style="font-size: clamp(3rem, 12vw, 160px)"
+    >
+      Papers
+    </h2>
+    <ol class="mx-auto max-w-5xl list-none">
+      {
+        publications.map((p, i) => {
+          const href = p.doi ? `https://doi.org/${p.doi}` : `https://arxiv.org/abs/${p.arxiv}`;
+          return (
+            <li class="flex flex-col gap-2 py-7 sm:flex-row sm:gap-10" style={i ? 'border-top: 1px solid rgba(215, 226, 234, 0.15)' : undefined}>
+              <p class="shrink-0 text-sm font-medium uppercase tracking-widest text-[#8E9AA3] sm:w-24 sm:pt-1">{p.year}</p>
+              <div class="flex flex-col gap-2">
+                <h3 class="font-medium leading-snug text-[#D7E2EA]" style="font-size: clamp(1rem, 1.8vw, 1.5rem)">
+                  <a href={href} class="text-[#D7E2EA] no-underline transition-opacity duration-200 hover:opacity-70">{p.title}</a>
+                </h3>
+                <p class="text-sm font-light text-[#D7E2EA]/70 sm:text-base">{p.authors.join(', ')}</p>
+                <p class="text-xs font-light uppercase tracking-widest text-[#8E9AA3] sm:text-sm">{statusText(p)}</p>
+              </div>
+            </li>
+          );
+        })
+      }
     </ol>
-  </section>
-
-  <section class="wrap section about-contact" aria-labelledby="about-h">
-    <div class="photo">
-      <Image src={portrait} alt="Anirudh Verma on a bridge above a forested river valley." widths={[360, 640, 900]} sizes="(min-width: 960px) 420px, 100vw" format="webp" loading="lazy" />
-    </div>
-    <div>
-      <h2 id="about-h">About</h2>
-      <p>
-        I studied physics at the Indian Institute of Science, Bengaluru, completing a BS (Research) and an MS (Research)
-        in 2025. I now work as a Project Assistant in the Quantum Optics & Quantum Information Lab at IISc with
-        C. M. Chandrashekar.
-      </p>
-      <p><a href={url('/about/')}>Education, skills, recognition and service</a></p>
-      <h3>Contact</h3>
-      <p><a href={`mailto:${person.email}`}>{person.email}</a></p>
-    </div>
+    <p class="mx-auto mt-10 max-w-5xl text-center">
+      <a
+        href={url('/papers/')}
+        class="inline-flex items-center gap-2 rounded-full border-2 border-solid border-[#D7E2EA] px-8 py-3 text-sm font-medium uppercase tracking-widest text-[#D7E2EA] no-underline transition-colors duration-200 hover:bg-[#D7E2EA]/10 sm:px-10 sm:py-3.5 sm:text-base"
+      >
+        Abstracts, theses and BibTeX
+      </a>
+    </p>
   </section>
 </Base>
-
-<style>
-  .intro { padding-top: 40px; }
-  @media (min-width: 960px) { .intro { padding-top: 72px; } }
-  .areas { font-family: var(--sans); font-size: var(--s-18); color: var(--graphite); margin: 16px 0 28px; max-width: 52ch; }
-  @media (min-width: 640px) { .areas { font-size: var(--s-21); } }
-  .about { font-size: var(--s-21); line-height: 1.5; max-width: 62ch; }
-  @media (max-width: 639px) { .about { font-size: var(--s-18); } }
-  .role { font-size: var(--s-16); margin: 20px 0 4px; }
-  .links { display: flex; flex-wrap: wrap; gap: 0 24px; list-style: none; padding: 0; margin: 0; font-size: var(--s-16); }
-  .links a { display: inline-block; padding: 10px 0; }
-  .hero-figure { padding-top: 40px; }
-
-  .grid { display: grid; gap: 56px 40px; margin-top: 64px; }
-  @media (min-width: 760px) { .grid { grid-template-columns: 1fr 1fr; } }
-
-  .other-h { margin: 80px 0 8px; font-size: var(--s-24); }
-  .other { list-style: none; padding: 0; margin: 0; }
-  .other li { padding: 18px 0; border-top: 1px solid var(--hairline); display: grid; gap: 4px 32px; }
-  @media (min-width: 900px) { .other li { grid-template-columns: 22rem 1fr; } .other .s { grid-column: 2; } }
-  .other p { margin: 0; }
-  .other .t { font-weight: 600; }
-  .other .d { font-size: var(--s-16); }
-  .other .s { font-size: var(--s-14); color: var(--graphite); }
-
-  .more { margin-top: 16px; font-size: var(--s-16); }
-
-  .timeline { list-style: none; padding: 0; margin: 0; }
-  .timeline li { display: grid; gap: 4px 32px; padding: 18px 0; border-top: 1px solid var(--hairline); }
-  @media (min-width: 760px) { .timeline li { grid-template-columns: 11rem 1fr; } }
-  .timeline p { margin: 0; }
-  .when { font-size: var(--s-14); color: var(--graphite); padding-top: 3px; font-variant-numeric: tabular-nums; }
-  .what { font-weight: 600; }
-  .detail { font-size: var(--s-16); }
-
-  .about-contact { display: grid; gap: 32px 56px; align-items: start; }
-  @media (min-width: 900px) { .about-contact { grid-template-columns: 5fr 7fr; } }
-  .photo :global(img) { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; object-position: 50% 40%; border-radius: 2px; }
-  .about-contact h2 { margin-bottom: 24px; }
-  .about-contact h3 { margin: 32px 0 8px; font-size: var(--s-21); }
-</style>

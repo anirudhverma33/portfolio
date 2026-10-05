@@ -1,4 +1,4 @@
-/* Pump & Idler — design tokens and base styles */
+/* Dark Kanit theme: design tokens and base styles */
 
 @font-face {
   font-family: 'STIX Two Math';
@@ -6,18 +6,22 @@
   font-display: swap;
 }
 
-:root {
-  --plate: #f3f4f2;
-  --ink: #1e2127;
-  --graphite: #5d616b;
-  --hairline: #d8dadc;
-  --pump: #5a3fd1;
-  --idler: #a3342f;
-  --surface: #fafaf9;
-  --grid-dot: rgba(30, 33, 39, 0.13);
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  --serif: 'STIX Two Text', 'STIX Two', Cambria, Georgia, serif;
-  --sans: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+:root {
+  --plate: #0c0c0c;
+  --ink: #d7e2ea;
+  --graphite: #8e9aa3;
+  --hairline: #2a2e33;
+  --pump: #b9a6ff;
+  --idler: #f08a80;
+  --surface: #141518;
+  --grid-dot: rgba(215, 226, 234, 0.12);
+
+  --serif: 'Kanit', system-ui, sans-serif;
+  --sans: 'Kanit', system-ui, sans-serif;
   --math: 'STIX Two Math', 'Cambria Math', math, serif;
 
   --s-14: 0.875rem;
@@ -34,41 +38,16 @@
   --max: 1200px;
   --section: 64px;
 
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 @media (min-width: 640px) {
   :root { --gutter: 32px; --section: 96px; }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --plate: #16181d;
-    --ink: #e6e7ea;
-    --graphite: #a3a7b0;
-    --hairline: #2e323a;
-    --pump: #a193ff;
-    --idler: #f08a80;
-    --surface: #1c1f25;
-    --grid-dot: rgba(230, 231, 234, 0.12);
-    color-scheme: dark;
-  }
-}
-:root[data-theme='dark'] {
-  --plate: #16181d;
-  --ink: #e6e7ea;
-  --graphite: #a3a7b0;
-  --hairline: #2e323a;
-  --pump: #a193ff;
-  --idler: #f08a80;
-  --surface: #1c1f25;
-  --grid-dot: rgba(230, 231, 234, 0.12);
-  color-scheme: dark;
-}
-
 *, *::before, *::after { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; background: var(--plate); }
 
 body {
   margin: 0;
@@ -76,7 +55,8 @@ body {
   color: var(--ink);
   font-family: var(--serif);
   font-size: 1.0625rem;
-  line-height: 1.55;
+  font-weight: 300;
+  line-height: 1.6;
   font-variant-numeric: lining-nums;
   text-rendering: optimizeLegibility;
 }
@@ -85,8 +65,8 @@ body {
 img, svg, canvas { display: block; max-width: 100%; }
 img { height: auto; }
 
-h1, h2, h3, h4 { font-weight: 600; line-height: 1.15; margin: 0; text-wrap: balance; }
-h1 { font-size: 2.5rem; letter-spacing: -0.01em; }
+h1, h2, h3, h4 { font-weight: 500; line-height: 1.15; margin: 0; text-wrap: balance; }
+h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.01em; text-transform: uppercase; }
 h2 { font-size: var(--s-36); letter-spacing: -0.005em; }
 h3 { font-size: var(--s-24); line-height: 1.25; }
 @media (min-width: 640px) { h1 { font-size: var(--s-64); } }
@@ -169,4 +149,19 @@ table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* Gradient display type shared by the homepage and page titles */
+.hero-heading,
+main h1 {
+  background: linear-gradient(180deg, #646973 0%, #bbccd7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Homepage wrapper: the full reset the landing sections are designed against */
+@layer base {
+  .landing, .landing *, .landing *::before, .landing *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  .landing { background: #0c0c0c; font-family: 'Kanit', sans-serif; overflow-x: clip; }
 }
